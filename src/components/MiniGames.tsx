@@ -1,11 +1,12 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface MiniGamesProps {
   isDemo?: boolean;
+  initialGameType?: 'truth-dare' | 'wheel-challenge';
 }
 
 // Truth or Dare questions and dares
@@ -48,11 +49,60 @@ const challenges = [
   "Do your next roast while doing jumping jacks"
 ];
 
-const MiniGames = ({ isDemo = false }: MiniGamesProps) => {
-  const [gameType, setGameType] = useState<'truth-dare' | 'wheel-challenge'>('truth-dare');
+// New word association prompts
+const wordAssociations = [
+  "Start with: Celebrity",
+  "Start with: Fashion",
+  "Start with: Music",
+  "Start with: Food",
+  "Start with: Technology",
+  "Start with: Movies",
+  "Start with: Sports",
+  "Start with: Animals",
+  "Start with: Weather",
+  "Start with: Travel"
+];
+
+// Voice changer options
+const voiceChangers = [
+  "Robot Voice",
+  "Chipmunk",
+  "Deep Voice",
+  "Elderly Person",
+  "Alien",
+  "Underwater Effect",
+  "Echo Chamber",
+  "Radio DJ",
+  "Whisper",
+  "Megaphone"
+];
+
+// Comedy card prompts
+const comedyCards = [
+  "Roast your opponent like you're their disappointed parent",
+  "Pretend your opponent is a bad superhero - what's their power?",
+  "Your opponent is the star of a terrible infomercial - what are they selling?",
+  "If your opponent was an app, what bugs would it have?",
+  "Roast your opponent's fashion choices like a snooty fashion critic",
+  "If your opponent was a video game character, what would be their weakness?",
+  "Roast your opponent's social media presence",
+  "Your opponent is the main character in a cheesy romance novel - describe their love interest",
+  "If your opponent was a fast food item, what would they be and why?",
+  "Roast your opponent as if they were running for political office"
+];
+
+const MiniGames = ({ isDemo = false, initialGameType = 'truth-dare' }: MiniGamesProps) => {
+  const [gameType, setGameType] = useState<string>(initialGameType);
   const [isSpinning, setIsSpinning] = useState(false);
   const [currentResult, setCurrentResult] = useState<string | null>(null);
   const [truthOrDare, setTruthOrDare] = useState<'truth' | 'dare'>('truth');
+  
+  useEffect(() => {
+    // Set the game type based on the prop
+    if (initialGameType) {
+      setGameType(initialGameType);
+    }
+  }, [initialGameType]);
   
   const spinBottle = () => {
     if (isSpinning) return;
@@ -91,6 +141,21 @@ const MiniGames = ({ isDemo = false }: MiniGamesProps) => {
     }, 1500);
   };
   
+  const getRandomPrompt = (array: string[]) => {
+    if (isSpinning) return;
+    
+    setCurrentResult(null);
+    setIsSpinning(true);
+    toast.info("Generating prompt...");
+    
+    setTimeout(() => {
+      const randomPrompt = array[Math.floor(Math.random() * array.length)];
+      setCurrentResult(randomPrompt);
+      setIsSpinning(false);
+      toast.success("Prompt ready!");
+    }, 1000);
+  };
+  
   return (
     <div className="h-full flex flex-col bg-white/30 backdrop-blur-sm rounded-xl border border-white/20">
       <div className="p-3 border-b border-white/20">
@@ -99,7 +164,7 @@ const MiniGames = ({ isDemo = false }: MiniGamesProps) => {
       
       <div className="flex-1 flex flex-col p-4">
         <ToggleGroup type="single" value={gameType} onValueChange={(value) => {
-          if (value) setGameType(value as 'truth-dare' | 'wheel-challenge');
+          if (value) setGameType(value);
           setCurrentResult(null);
         }}>
           <ToggleGroupItem value="truth-dare" className="flex-1">
@@ -108,6 +173,16 @@ const MiniGames = ({ isDemo = false }: MiniGamesProps) => {
           <ToggleGroupItem value="wheel-challenge" className="flex-1">
             🎡 Wheel of Challenge
           </ToggleGroupItem>
+          {!initialGameType?.includes('truth-dare') && !initialGameType?.includes('wheel-challenge') && (
+            <>
+              <ToggleGroupItem value="word-association" className="flex-1 max-sm:mt-2">
+                🔤 Word Game
+              </ToggleGroupItem>
+              <ToggleGroupItem value="comedy-cards" className="flex-1 max-sm:mt-2">
+                🃏 Comedy Cards
+              </ToggleGroupItem>
+            </>
+          )}
         </ToggleGroup>
         
         <div className="mt-6 flex-1">
@@ -164,12 +239,63 @@ const MiniGames = ({ isDemo = false }: MiniGamesProps) => {
             </div>
           )}
           
-          {currentResult && (
+          {gameType === 'word-association' && (
+            <div className="text-center">
+              <div className="my-6">
+                <div className="p-4 bg-white/30 rounded-lg mb-4">
+                  <p className="text-sm mb-2">How to play:</p>
+                  <ol className="text-sm text-left list-decimal pl-4">
+                    <li>Get a starting word</li>
+                    <li>Think of a word associated with it</li>
+                    <li>Use that new word in your roast</li>
+                    <li>Your opponent continues with a new association</li>
+                  </ol>
+                </div>
+                <div className="h-20 w-full bg-white/40 rounded-lg flex items-center justify-center">
+                  <span className="text-xl font-bold">{currentResult || "Click the button to start"}</span>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={() => getRandomPrompt(wordAssociations)}
+                disabled={isSpinning}
+                className="mt-4 button-gradient"
+              >
+                Get Starting Word
+              </Button>
+            </div>
+          )}
+          
+          {gameType === 'comedy-cards' && (
+            <div className="text-center">
+              <div className="my-6 relative">
+                <div className={`w-48 h-64 mx-auto rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center p-4 ${isSpinning ? 'animate-pulse' : ''}`}>
+                  {currentResult ? (
+                    <p className="text-white text-center font-medium">{currentResult}</p>
+                  ) : (
+                    <span className="text-4xl">🃏</span>
+                  )}
+                </div>
+              </div>
+              
+              <Button 
+                onClick={() => getRandomPrompt(comedyCards)}
+                disabled={isSpinning}
+                className="mt-4 button-gradient"
+              >
+                Draw a Card
+              </Button>
+            </div>
+          )}
+          
+          {currentResult && gameType !== 'comedy-cards' && (
             <div className="mt-6 p-4 bg-white/50 rounded-xl text-center">
               <h4 className="font-medium mb-2">
                 {gameType === 'truth-dare' 
                   ? (truthOrDare === 'truth' ? 'Question:' : 'Dare:') 
-                  : 'Challenge:'}
+                  : gameType === 'wheel-challenge' 
+                    ? 'Challenge:' 
+                    : 'Prompt:'}
               </h4>
               <p className="text-lg font-bold">{currentResult}</p>
             </div>

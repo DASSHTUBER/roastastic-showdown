@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import UserVideo from './UserVideo';
 import RoundTimer from './RoundTimer';
@@ -7,9 +8,9 @@ import AudienceReactions from './AudienceReactions';
 import AudienceVoting from './AudienceVoting';
 import ChatPanel from './ChatPanel';
 import MiniGames from './MiniGames';
-import { MessageCircle, Settings } from 'lucide-react';
+import { MessageCircle, Settings, Clock, LogOut } from 'lucide-react';
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 
 interface BattleArenaProps {
@@ -17,6 +18,7 @@ interface BattleArenaProps {
 }
 
 const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
+  const navigate = useNavigate();
   const [currentRound, setCurrentRound] = useState(1);
   const totalRounds = 3;
   const [started, setStarted] = useState(false);
@@ -28,6 +30,10 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
   const [showVoting, setShowVoting] = useState(false);
   const [roundWinners, setRoundWinners] = useState<string[]>([]);
   const [battleWinner, setBattleWinner] = useState<string | null>(null);
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [showExtendDialog, setShowExtendDialog] = useState(false);
+  const [opponentWantsToExtend, setOpponentWantsToExtend] = useState(false);
+  const [userWantsToExtend, setUserWantsToExtend] = useState(false);
   
   const user1 = "JokeSlayer42";
   const user2 = "RoastMaster99";
@@ -84,6 +90,11 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
           setRoundWinners([]);
           setBattleWinner(null);
         }, 5000);
+      } else {
+        // For non-demo battles, show the extend dialog option
+        setTimeout(() => {
+          simulateOpponentExtendRequest();
+        }, 5000);
       }
     }
     
@@ -94,6 +105,54 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
     setShowMiniGames(!showMiniGames);
     if (!showMiniGames) {
       setShowChat(false);
+    }
+  };
+  
+  const handleLeaveBattle = () => {
+    toast.info("Leaving battle...");
+    setShowLeaveDialog(false);
+    
+    setTimeout(() => {
+      navigate('/battles');
+    }, 1000);
+  };
+  
+  const simulateOpponentExtendRequest = () => {
+    if (!isDemo && battleComplete) {
+      setOpponentWantsToExtend(true);
+      toast.info(`${user2} wants to extend the battle for more rounds!`, {
+        action: {
+          label: "View",
+          onClick: () => setShowExtendDialog(true)
+        }
+      });
+    }
+  };
+  
+  const handleExtendBattle = () => {
+    setUserWantsToExtend(true);
+    setShowExtendDialog(false);
+    
+    if (opponentWantsToExtend) {
+      // Both users want to extend
+      toast.success("Battle extended for 2 more rounds!");
+      setCurrentRound(totalRounds + 1);
+      setBattleComplete(false);
+      setBattleWinner(null);
+    } else {
+      // Waiting for opponent
+      toast.info("Waiting for opponent to agree...");
+      
+      // Simulate opponent agreeing after a delay
+      if (!isDemo) {
+        setTimeout(() => {
+          setOpponentWantsToExtend(true);
+          toast.success("Your opponent agreed! Battle extended for 2 more rounds!");
+          setCurrentRound(totalRounds + 1);
+          setBattleComplete(false);
+          setBattleWinner(null);
+        }, 3000);
+      }
     }
   };
   
@@ -125,49 +184,64 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
                   </div>
                 </div>
                 
-                {/* Settings Dialog */}
-                {!isDemo && (
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="icon" className="rounded-full">
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Battle Settings</DialogTitle>
-                      </DialogHeader>
-                      <div className="py-4 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <label htmlFor="video-toggle" className="text-sm font-medium">
-                            Video
-                          </label>
-                          <Switch 
-                            id="video-toggle" 
-                            checked={videoEnabled} 
-                            onCheckedChange={(checked) => {
-                              setVideoEnabled(checked);
-                              toast.info(`Video ${checked ? 'enabled' : 'disabled'}`);
-                            }} 
-                          />
+                <div className="flex items-center space-x-2">
+                  {/* Leave Battle Button */}
+                  {!isDemo && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-roast-red hover:bg-roast-red/10 hover:text-roast-red flex items-center"
+                      onClick={() => setShowLeaveDialog(true)}
+                    >
+                      <LogOut className="h-4 w-4 mr-1" />
+                      Leave
+                    </Button>
+                  )}
+                  
+                  {/* Settings Dialog */}
+                  {!isDemo && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="icon" className="rounded-full">
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Battle Settings</DialogTitle>
+                        </DialogHeader>
+                        <div className="py-4 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <label htmlFor="video-toggle" className="text-sm font-medium">
+                              Video
+                            </label>
+                            <Switch 
+                              id="video-toggle" 
+                              checked={videoEnabled} 
+                              onCheckedChange={(checked) => {
+                                setVideoEnabled(checked);
+                                toast.info(`Video ${checked ? 'enabled' : 'disabled'}`);
+                              }} 
+                            />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <label htmlFor="audio-toggle" className="text-sm font-medium">
+                              Microphone
+                            </label>
+                            <Switch 
+                              id="audio-toggle" 
+                              checked={audioEnabled} 
+                              onCheckedChange={(checked) => {
+                                setAudioEnabled(checked);
+                                toast.info(`Microphone ${checked ? 'enabled' : 'disabled'}`);
+                              }}
+                            />
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <label htmlFor="audio-toggle" className="text-sm font-medium">
-                            Microphone
-                          </label>
-                          <Switch 
-                            id="audio-toggle" 
-                            checked={audioEnabled} 
-                            onCheckedChange={(checked) => {
-                              setAudioEnabled(checked);
-                              toast.info(`Microphone ${checked ? 'enabled' : 'disabled'}`);
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                )}
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </div>
               </div>
               
               {!battleComplete && (
@@ -186,9 +260,12 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
                   isCurrentUser={true} 
                   videoEnabled={videoEnabled}
                   audioEnabled={audioEnabled}
+                  onLeave={() => setShowLeaveDialog(true)}
+                  avatarUrl="https://randomuser.me/api/portraits/women/44.jpg"
                 />
                 <UserVideo 
-                  username={user2} 
+                  username={user2}
+                  avatarUrl="https://randomuser.me/api/portraits/men/32.jpg"
                 />
               </div>
               
@@ -235,6 +312,16 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
                   </span>
                 )}
                 
+                {!isDemo && battleComplete && (
+                  <Button 
+                    className="button-gradient rounded-full text-white flex items-center" 
+                    onClick={() => setShowExtendDialog(true)}
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Extend Battle
+                  </Button>
+                )}
+                
                 {!isDemo && !battleComplete && (
                   <div className="flex space-x-3">
                     <Button 
@@ -272,6 +359,55 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
         user2={user2}
         isDemo={isDemo}
       />
+      
+      {/* Leave Battle Confirmation Dialog */}
+      <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Leave Battle</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to leave this battle? Your opponent and the audience will be notified.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex sm:justify-between">
+            <Button variant="outline" onClick={() => setShowLeaveDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleLeaveBattle}
+            >
+              Leave Battle
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Extend Battle Dialog */}
+      <Dialog open={showExtendDialog} onOpenChange={setShowExtendDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Extend Battle</DialogTitle>
+            <DialogDescription>
+              {opponentWantsToExtend 
+                ? "Your opponent wants to extend the battle for 2 more rounds. Would you like to continue?" 
+                : "Would you like to extend this battle for 2 more rounds?"}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex sm:justify-between">
+            <Button variant="outline" onClick={() => setShowExtendDialog(false)}>
+              Decline
+            </Button>
+            <Button 
+              variant="default" 
+              className="button-gradient"
+              onClick={handleExtendBattle}
+            >
+              Extend Battle
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

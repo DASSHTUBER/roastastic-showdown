@@ -1,7 +1,8 @@
 
 import { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Video, VideoOff, Volume, VolumeX } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Volume, VolumeX, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface UserVideoProps {
   username: string;
@@ -11,6 +12,7 @@ interface UserVideoProps {
   videoEnabled?: boolean;
   audioEnabled?: boolean;
   streamId?: string;
+  onLeave?: () => void;
 }
 
 const UserVideo = ({ 
@@ -20,7 +22,8 @@ const UserVideo = ({
   isMuted = false,
   videoEnabled = true,
   audioEnabled = true,
-  streamId
+  streamId,
+  onLeave
 }: UserVideoProps) => {
   const [audioMuted, setAudioMuted] = useState(isMuted);
   const [videoLoaded, setVideoLoaded] = useState(false);
@@ -87,14 +90,20 @@ const UserVideo = ({
       
       {/* Fallback background when no video */}
       {(!videoLoaded || isVideoDisabled) && (
-        <div 
-          className="absolute inset-0"
-          style={{ 
-            backgroundImage: avatarUrl ? `url(${avatarUrl})` : 'linear-gradient(to bottom right, #2A2A2A, #1A1A1A)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center' 
-          }}
-        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div 
+            className="absolute inset-0"
+            style={{ 
+              backgroundImage: avatarUrl ? `url(${avatarUrl})` : 'linear-gradient(to bottom right, #2A2A2A, #1A1A1A)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center' 
+            }}
+          />
+          <Avatar className="h-24 w-24 border-2 border-white/20">
+            <AvatarImage src={avatarUrl} alt={username} />
+            <AvatarFallback>{username.substring(0, 2).toUpperCase()}</AvatarFallback>
+          </Avatar>
+        </div>
       )}
       
       {/* User info overlay */}
@@ -126,6 +135,16 @@ const UserVideo = ({
                 className="bg-roast-dark-gray/50 text-white hover:bg-roast-dark-gray/70 rounded-full h-8 w-8"
               >
                 {audioMuted ? <VolumeX size={16} /> : <Volume size={16} />}
+              </Button>
+            )}
+            {isCurrentUser && onLeave && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={onLeave}
+                className="bg-roast-red/50 text-white hover:bg-roast-red/70 rounded-full h-8 w-8"
+              >
+                <X size={16} />
               </Button>
             )}
           </div>
