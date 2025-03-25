@@ -6,11 +6,13 @@ import BattleArena from '@/components/BattleArena';
 import UserMatchmaking from '@/components/UserMatchmaking';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 
 const Battles = () => {
   const [isMatching, setIsMatching] = useState(false);
   const [matchFound, setMatchFound] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showPermissionDialog, setShowPermissionDialog] = useState(false);
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -21,6 +23,16 @@ const Battles = () => {
     
     return () => clearTimeout(timer);
   }, []);
+  
+  const checkMediaPermissions = async () => {
+    try {
+      await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      startMatchmaking();
+    } catch (error) {
+      console.error("Media permissions error:", error);
+      setShowPermissionDialog(true);
+    }
+  };
   
   const startMatchmaking = () => {
     setIsMatching(true);
@@ -74,7 +86,7 @@ const Battles = () => {
                         Remember to keep it funny, not hurtful!
                       </p>
                       <Button 
-                        onClick={startMatchmaking}
+                        onClick={checkMediaPermissions}
                         className="button-gradient rounded-full text-white px-8 py-6 text-lg font-medium"
                       >
                         Start Matchmaking
@@ -86,16 +98,16 @@ const Battles = () => {
                         <h3 className="font-semibold mb-2">Battle Rules</h3>
                         <ul className="text-sm text-roast-light-gray text-left list-disc pl-4 space-y-2">
                           <li>Each battle has 3 rounds</li>
-                          <li>60 seconds per round</li>
+                          <li>Free-form roasting (no turns)</li>
                           <li>Audience votes for the winner</li>
                           <li>Keep it witty, not offensive</li>
                         </ul>
                       </div>
                       
                       <div className="glass-light rounded-xl p-6">
-                        <h3 className="font-semibold mb-2">Moderation</h3>
+                        <h3 className="font-semibold mb-2">Mini Games</h3>
                         <p className="text-sm text-roast-light-gray text-left">
-                          AI moderation is active to prevent harmful content. Repeated violations may result in account restrictions.
+                          Spice up your battle with Truth or Dare, Challenge Wheel, and more interactive games while roasting!
                         </p>
                       </div>
                       
@@ -117,6 +129,35 @@ const Battles = () => {
               )}
             </div>
           </section>
+          
+          {/* Camera/Mic Permission Dialog */}
+          <Dialog open={showPermissionDialog} onOpenChange={setShowPermissionDialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Camera & Microphone Access</DialogTitle>
+                <DialogDescription>
+                  RoastBattle needs access to your camera and microphone to let you participate in live battles. Without these permissions, you won't be able to join a battle.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <p className="text-sm">
+                  Please enable camera and microphone access in your browser settings and try again. This typically appears in the address bar or in your browser's site settings.
+                </p>
+              </div>
+              <DialogFooter>
+                <Button onClick={() => setShowPermissionDialog(false)}>Got it</Button>
+                <Button 
+                  variant="default" 
+                  onClick={() => {
+                    checkMediaPermissions();
+                    setShowPermissionDialog(false);
+                  }}
+                >
+                  Try Again
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>

@@ -5,8 +5,11 @@ import UserVideo from './UserVideo';
 import RoundTimer from './RoundTimer';
 import AudienceReactions from './AudienceReactions';
 import ChatPanel from './ChatPanel';
-import { Play, MessageCircle, X } from 'lucide-react';
+import MiniGames from './MiniGames';
+import { MessageCircle, X, Settings } from 'lucide-react';
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 
 interface BattleArenaProps {
   isDemo?: boolean;
@@ -17,39 +20,53 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
   const totalRounds = 3;
   const [started, setStarted] = useState(false);
   const [showChat, setShowChat] = useState(false);
-  const [currentTurn, setCurrentTurn] = useState<'you' | 'opponent'>('opponent');
+  const [showMiniGames, setShowMiniGames] = useState(false);
   const [battleComplete, setBattleComplete] = useState(false);
+  const [videoEnabled, setVideoEnabled] = useState(true);
+  const [audioEnabled, setAudioEnabled] = useState(true);
   
   useEffect(() => {
     if (!isDemo && !started) {
       setStarted(true);
+      
+      if (!isDemo) {
+        requestMediaPermissions();
+      }
     }
   }, [isDemo, started]);
   
-  useEffect(() => {
-    if (currentRound > 1) {
-      // Toggle turn
-      setCurrentTurn(prev => prev === 'you' ? 'opponent' : 'you');
+  const requestMediaPermissions = async () => {
+    try {
+      await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      toast.success("Camera and microphone access granted!");
+    } catch (error) {
+      toast.error("Please allow camera and microphone access for the full experience");
+      console.error("Media permissions error:", error);
     }
-  }, [currentRound]);
+  };
   
   const handleRoundComplete = () => {
     if (currentRound < totalRounds) {
       toast.info(`Round ${currentRound} complete!`);
       setCurrentRound(currentRound + 1);
     } else {
-      // Battle complete logic here
       toast.success("Battle complete! Audience is voting on the winner...");
       setBattleComplete(true);
       
       if (isDemo) {
-        // Reset the demo
         setTimeout(() => {
           setCurrentRound(1);
           setStarted(false);
           setBattleComplete(false);
         }, 5000);
       }
+    }
+  };
+  
+  const toggleMiniGames = () => {
+    setShowMiniGames(!showMiniGames);
+    if (!showMiniGames) {
+      setShowChat(false);
     }
   };
   
@@ -62,7 +79,6 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
             onClick={() => setStarted(true)} 
             className="button-gradient rounded-full text-white px-8 py-6 text-lg font-medium"
           >
-            <Play className="mr-2 h-5 w-5" />
             Watch Demo Battle
           </Button>
         </div>
@@ -71,10 +87,10 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
           <div className="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-6">
             <div className="flex flex-col space-y-6 lg:w-3/4">
               {/* Battle info */}
-              <div className="flex flex-col space-y-4">
-                <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center">
+                <div>
                   <h2 className="text-xl font-bold">Live Battle {isDemo && "Demo"}</h2>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mt-1">
                     <span className="text-sm bg-roast-red/10 text-roast-red px-2 py-1 rounded-full">Live</span>
                     <span className="text-sm bg-roast-dark-gray/10 px-2 py-1 rounded-full">
                       <span className="text-roast-medium-gray mr-1">👁</span> {isDemo ? 238 : Math.floor(Math.random() * 300) + 100}
@@ -82,21 +98,67 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
                   </div>
                 </div>
                 
-                {!battleComplete && (
-                  <RoundTimer 
-                    duration={isDemo ? 30 : 60} 
-                    currentRound={currentRound} 
-                    totalRounds={totalRounds} 
-                    onComplete={handleRoundComplete}
-                  />
+                {/* Settings Dialog */}
+                {!isDemo && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="icon" className="rounded-full">
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Battle Settings</DialogTitle>
+                      </DialogHeader>
+                      <div className="py-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <label htmlFor="video-toggle" className="text-sm font-medium">
+                            Video
+                          </label>
+                          <Switch 
+                            id="video-toggle" 
+                            checked={videoEnabled} 
+                            onCheckedChange={(checked) => {
+                              setVideoEnabled(checked);
+                              toast.info(`Video ${checked ? 'enabled' : 'disabled'}`);
+                            }} 
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <label htmlFor="audio-toggle" className="text-sm font-medium">
+                            Microphone
+                          </label>
+                          <Switch 
+                            id="audio-toggle" 
+                            checked={audioEnabled} 
+                            onCheckedChange={(checked) => {
+                              setAudioEnabled(checked);
+                              toast.info(`Microphone ${checked ? 'enabled' : 'disabled'}`);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 )}
               </div>
+              
+              {!battleComplete && (
+                <RoundTimer 
+                  duration={isDemo ? 30 : 60} 
+                  currentRound={currentRound} 
+                  totalRounds={totalRounds} 
+                  onComplete={handleRoundComplete}
+                />
+              )}
               
               {/* Video grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <UserVideo 
                   username="JokeSlayer42" 
                   isCurrentUser={true} 
+                  videoEnabled={videoEnabled}
+                  audioEnabled={audioEnabled}
                 />
                 <UserVideo 
                   username="RoastMaster99" 
@@ -107,15 +169,31 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
               <div className="flex justify-between items-center">
                 <AudienceReactions />
                 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full"
-                  onClick={() => setShowChat(!showChat)}
-                >
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  {showChat ? 'Hide Chat' : 'Show Chat'}
-                </Button>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`rounded-full ${showMiniGames ? 'bg-roast-orange/10 text-roast-orange border-roast-orange/20' : ''}`}
+                    onClick={toggleMiniGames}
+                  >
+                    🎮 Mini Games
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`rounded-full ${showChat ? 'bg-roast-red/10 text-roast-red border-roast-red/20' : ''}`}
+                    onClick={() => {
+                      setShowChat(!showChat);
+                      if (!showChat) {
+                        setShowMiniGames(false);
+                      }
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    {showChat ? 'Hide Chat' : 'Show Chat'}
+                  </Button>
+                </div>
               </div>
               
               {/* Battle controls */}
@@ -124,16 +202,14 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
                   <span className="text-sm font-medium text-roast-orange">Battle completed! Winner will be announced soon.</span>
                 ) : (
                   <span className="text-sm text-roast-light-gray">
-                    {isDemo ? 'Demo mode' : `${currentTurn === 'you' ? 'Your turn!' : `Opponent's turn. Your turn in: 0:${Math.floor(Math.random() * 30) + 10}`}`}
+                    {isDemo ? 'Demo mode' : 'Free-form roasting! Just speak when you have something to say.'}
                   </span>
                 )}
                 
                 {!isDemo && !battleComplete && (
                   <div className="flex space-x-3">
-                    <Button variant="outline" className="rounded-full">Skip Turn</Button>
                     <Button 
                       className="button-gradient rounded-full text-white"
-                      disabled={currentTurn !== 'you'}
                     >
                       Ready to Roast
                     </Button>
@@ -145,6 +221,12 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
             {showChat && (
               <div className="lg:w-1/4 h-full">
                 <ChatPanel isDemo={isDemo} />
+              </div>
+            )}
+            
+            {showMiniGames && (
+              <div className="lg:w-1/4 h-full">
+                <MiniGames isDemo={isDemo} />
               </div>
             )}
           </div>
