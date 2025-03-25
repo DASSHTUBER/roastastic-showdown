@@ -2,10 +2,11 @@
 import { useState, useEffect } from 'react';
 import { Bell, Trophy, Users } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,7 +45,12 @@ const Navbar = () => {
           <Button variant="ghost" size="icon" className="rounded-full">
             <Users size={20} />
           </Button>
-          <Button className="button-gradient rounded-full text-white">Battle Now</Button>
+          <Button 
+            className="button-gradient rounded-full text-white"
+            onClick={() => navigate('/battles')}
+          >
+            Battle Now
+          </Button>
         </div>
       </div>
     </nav>
