@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Video, VideoOff, Volume, VolumeX } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
@@ -10,6 +10,7 @@ interface UserVideoProps {
   isMuted?: boolean;
   videoEnabled?: boolean;
   audioEnabled?: boolean;
+  streamId?: string;
 }
 
 const UserVideo = ({ 
@@ -18,27 +19,47 @@ const UserVideo = ({
   isCurrentUser = false, 
   isMuted = false,
   videoEnabled = true,
-  audioEnabled = true
+  audioEnabled = true,
+  streamId
 }: UserVideoProps) => {
   const [audioMuted, setAudioMuted] = useState(isMuted);
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [showControls, setShowControls] = useState(false);
-
-  // Simulate video loading
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // Handle video stream
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setVideoLoaded(true);
-    }, 1000);
+    const setupVideoStream = async () => {
+      if (!isCurrentUser || !videoEnabled) return;
+      
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: videoEnabled, 
+          audio: audioEnabled 
+        });
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          setVideoLoaded(true);
+        }
+        
+        return () => {
+          stream.getTracks().forEach(track => track.stop());
+        };
+      } catch (error) {
+        console.error("Error accessing media devices:", error);
+      }
+    };
     
-    return () => clearTimeout(timer);
-  }, []);
-
+    setupVideoStream();
+  }, [isCurrentUser, videoEnabled, audioEnabled]);
+  
   // Apply video enabled/disabled state for current user
-  const isVideoDisabled = isCurrentUser && !videoEnabled;
-
+  const isVideoDisabled = isCurrentUser ? !videoEnabled : false;
+  
   return (
     <div 
-      className="video-container group animate-scale-in"
+      className="video-container group animate-scale-in relative h-64 md:h-80 rounded-xl overflow-hidden"
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => setShowControls(false)}
     >
@@ -55,15 +76,26 @@ const UserVideo = ({
         </div>
       )}
       
-      {/* Video element (placeholder for now) */}
-      <div 
-        className={`absolute inset-0 ${videoLoaded && !isVideoDisabled ? 'opacity-100' : 'opacity-0'} transition-opacity duration-700`}
-        style={{ 
-          backgroundImage: avatarUrl ? `url(${avatarUrl})` : 'linear-gradient(to bottom right, #2A2A2A, #1A1A1A)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center' 
-        }}
+      {/* Actual video element */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted={isCurrentUser || audioMuted}
+        className={`w-full h-full object-cover ${videoLoaded && !isVideoDisabled ? 'opacity-100' : 'opacity-0'} transition-opacity duration-700`}
       />
+      
+      {/* Fallback background when no video */}
+      {(!videoLoaded || isVideoDisabled) && (
+        <div 
+          className="absolute inset-0"
+          style={{ 
+            backgroundImage: avatarUrl ? `url(${avatarUrl})` : 'linear-gradient(to bottom right, #2A2A2A, #1A1A1A)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center' 
+          }}
+        />
+      )}
       
       {/* User info overlay */}
       <div className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent ${showControls ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}>

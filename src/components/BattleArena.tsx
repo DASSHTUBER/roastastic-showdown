@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import UserVideo from './UserVideo';
 import RoundTimer from './RoundTimer';
 import AudienceReactions from './AudienceReactions';
+import AudienceVoting from './AudienceVoting';
 import ChatPanel from './ChatPanel';
 import MiniGames from './MiniGames';
-import { MessageCircle, X, Settings } from 'lucide-react';
+import { MessageCircle, Settings } from 'lucide-react';
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -24,6 +25,12 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
   const [battleComplete, setBattleComplete] = useState(false);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [audioEnabled, setAudioEnabled] = useState(true);
+  const [showVoting, setShowVoting] = useState(false);
+  const [roundWinners, setRoundWinners] = useState<string[]>([]);
+  const [battleWinner, setBattleWinner] = useState<string | null>(null);
+  
+  const user1 = "JokeSlayer42";
+  const user2 = "RoastMaster99";
   
   useEffect(() => {
     if (!isDemo && !started) {
@@ -46,11 +53,27 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
   };
   
   const handleRoundComplete = () => {
+    setShowVoting(true);
+  };
+  
+  const handleVoteComplete = (winner: string) => {
+    const newRoundWinners = [...roundWinners, winner];
+    setRoundWinners(newRoundWinners);
+    
+    toast.info(`Round ${currentRound} winner: ${winner}!`);
+    
     if (currentRound < totalRounds) {
-      toast.info(`Round ${currentRound} complete!`);
       setCurrentRound(currentRound + 1);
     } else {
-      toast.success("Battle complete! Audience is voting on the winner...");
+      // Determine battle winner
+      const winCounts = newRoundWinners.reduce((counts, winner) => {
+        counts[winner] = (counts[winner] || 0) + 1;
+        return counts;
+      }, {} as Record<string, number>);
+      
+      const battleWinner = Object.entries(winCounts).sort((a, b) => b[1] - a[1])[0][0];
+      setBattleWinner(battleWinner);
+      toast.success(`Battle complete! ${battleWinner} wins!`);
       setBattleComplete(true);
       
       if (isDemo) {
@@ -58,9 +81,13 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
           setCurrentRound(1);
           setStarted(false);
           setBattleComplete(false);
+          setRoundWinners([]);
+          setBattleWinner(null);
         }, 5000);
       }
     }
+    
+    setShowVoting(false);
   };
   
   const toggleMiniGames = () => {
@@ -155,13 +182,13 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
               {/* Video grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <UserVideo 
-                  username="JokeSlayer42" 
+                  username={user1} 
                   isCurrentUser={true} 
                   videoEnabled={videoEnabled}
                   audioEnabled={audioEnabled}
                 />
                 <UserVideo 
-                  username="RoastMaster99" 
+                  username={user2} 
                 />
               </div>
               
@@ -199,7 +226,9 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
               {/* Battle controls */}
               <div className="flex justify-between items-center">
                 {battleComplete ? (
-                  <span className="text-sm font-medium text-roast-orange">Battle completed! Winner will be announced soon.</span>
+                  <span className="text-sm font-medium text-roast-orange">
+                    Battle completed! Winner: {battleWinner}
+                  </span>
                 ) : (
                   <span className="text-sm text-roast-light-gray">
                     {isDemo ? 'Demo mode' : 'Free-form roasting! Just speak when you have something to say.'}
@@ -232,6 +261,17 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
           </div>
         </>
       )}
+      
+      {/* Audience Voting Dialog */}
+      <AudienceVoting
+        isOpen={showVoting}
+        onClose={() => setShowVoting(false)}
+        onVoteComplete={handleVoteComplete}
+        currentRound={currentRound}
+        user1={user1}
+        user2={user2}
+        isDemo={isDemo}
+      />
     </div>
   );
 };
