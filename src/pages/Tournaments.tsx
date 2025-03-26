@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Button } from "@/components/ui/button";
-import { Calendar, Trophy, Users, Clock, GameController, ChevronRight } from 'lucide-react';
+import { Calendar, Trophy, Users, Clock, ChevronRight, Gamepad } from 'lucide-react';
 import { toast } from "sonner";
 
 interface Tournament {
