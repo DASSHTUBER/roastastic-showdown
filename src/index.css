@@ -43,6 +43,14 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Gartic Phone Theme Colors */
+    --gartic-purple: 275, 89%, 41%;
+    --gartic-purple-light: 275, 89%, 47%;
+    --gartic-purple-dark: 275, 89%, 30%;
+    --gartic-neon-green: 154, 100%, 50%;
+    --gartic-neon-blue: 195, 100%, 50%;
+    --gartic-accent: 351, 95%, 71%;
   }
 }
 
@@ -52,7 +60,7 @@
   }
 
   body {
-    @apply bg-[#6A5BE2] text-foreground antialiased overflow-x-hidden;
+    @apply bg-[#8023a5] text-foreground antialiased overflow-x-hidden;
     font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
     background-image: url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   }
@@ -72,7 +80,19 @@
   }
   
   .gartic-container {
-    @apply bg-white/95 rounded-3xl shadow-lg border-4 border-[#F5F5F7];
+    @apply bg-[#5a2b79]/95 rounded-3xl shadow-lg border-4 border-[#4a2264];
+  }
+  
+  .gartic-panel {
+    @apply bg-[#4a2264] rounded-xl shadow-md border-2 border-[#421e57];
+  }
+  
+  .gartic-button {
+    @apply bg-white rounded-full shadow-md border-2 border-[#e6e6e6] text-[#4a2264] font-bold hover:bg-[#f0f0f0] transition-colors;
+  }
+  
+  .gartic-accent-button {
+    @apply bg-[#00E1A0] rounded-full shadow-md border-2 border-[#00c78c] text-[#4a2264] font-bold hover:bg-[#00c78c] transition-colors;
   }
   
   .text-gradient {
@@ -88,7 +108,7 @@
   }
   
   .video-container {
-    @apply relative overflow-hidden rounded-xl border-4 border-[#F5F5F7] shadow-lg;
+    @apply relative overflow-hidden rounded-xl border-4 border-[#4a2264] shadow-lg;
     aspect-ratio: 16 / 9;
   }
   
@@ -98,6 +118,16 @@
   
   .animate-pulse-soft {
     animation: pulse-soft 2s infinite;
+  }
+  
+  .neon-text-green {
+    @apply text-[#00E1A0] font-bold;
+    text-shadow: 0 0 5px rgba(0, 225, 160, 0.7), 0 0 10px rgba(0, 225, 160, 0.5);
+  }
+  
+  .neon-text-blue {
+    @apply text-[#00B2E1] font-bold;
+    text-shadow: 0 0 5px rgba(0, 178, 225, 0.7), 0 0 10px rgba(0, 178, 225, 0.5);
   }
   
   @keyframes float {

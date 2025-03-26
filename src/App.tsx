@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Battles from "./pages/Battles";
 import MiniGames from "./pages/MiniGames";
 import Leaderboard from "./pages/Leaderboard";
+import Tournaments from "./pages/Tournaments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/battles" element={<Battles />} />
             <Route path="/minigames" element={<MiniGames />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/tournaments" element={<Tournaments />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

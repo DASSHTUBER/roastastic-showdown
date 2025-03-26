@@ -67,23 +67,23 @@ const UserVideo = ({
     <div 
       className={cn(
         "relative h-64 md:h-80 rounded-xl overflow-hidden animate-scale-in group",
-        "border-4 border-[#F5F5F7]",
-        isCurrentUser ? "bg-[#FFEFF0]" : "bg-[#EFF5FF]",
+        "border-4 border-[#4a2264]",
+        isCurrentUser ? "bg-[#3d1b53]" : "bg-[#3d1b53]",
         className
       )}
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => setShowControls(false)}
     >
       {/* Video placeholder */}
-      <div className={`absolute inset-0 bg-gradient-to-b ${isCurrentUser ? 'from-[#FFEFF0] to-[#FFC8D0]' : 'from-[#EFF5FF] to-[#C8E0FF]'} flex items-center justify-center ${videoLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-700`}>
-        <div className="w-16 h-16 rounded-full bg-white/50 animate-pulse-soft" />
+      <div className={`absolute inset-0 bg-gradient-to-b ${isCurrentUser ? 'from-[#4a2264] to-[#3d1b53]' : 'from-[#4a2264] to-[#3d1b53]'} flex items-center justify-center ${videoLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-700`}>
+        <div className="w-16 h-16 rounded-full bg-white/20 animate-pulse-soft" />
       </div>
       
       {/* Video disabled overlay */}
       {isVideoDisabled && (
-        <div className="absolute inset-0 bg-[#6A5BE2]/10 flex flex-col items-center justify-center text-[#6A5BE2] z-10">
+        <div className="absolute inset-0 bg-[#4a2264]/30 flex flex-col items-center justify-center text-[#00E1A0] z-10">
           <VideoOff size={32} className="mb-2 opacity-70" />
-          <p className="text-sm opacity-70">Camera off</p>
+          <p className="text-sm opacity-70 text-[#00E1A0]">Camera off</p>
         </div>
       )}
       
@@ -100,7 +100,7 @@ const UserVideo = ({
       {(!videoLoaded || isVideoDisabled) && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div 
-            className={`absolute inset-0 ${isCurrentUser ? 'bg-[#FFEFF0]' : 'bg-[#EFF5FF]'}`}
+            className={`absolute inset-0 ${isCurrentUser ? 'bg-[#3d1b53]' : 'bg-[#3d1b53]'}`}
             style={{ 
               backgroundImage: avatarUrl ? `url(${avatarUrl})` : 'none',
               backgroundSize: 'cover',
@@ -110,7 +110,7 @@ const UserVideo = ({
           />
           <Avatar className="h-24 w-24 border-2 border-white">
             <AvatarImage src={avatarUrl} alt={username} />
-            <AvatarFallback className={isCurrentUser ? "bg-[#FF9042]" : "bg-[#6A5BE2]"}>
+            <AvatarFallback className={isCurrentUser ? "bg-[#00E1A0]" : "bg-[#8023a5]"}>
               {username.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
@@ -132,7 +132,7 @@ const UserVideo = ({
                 variant="ghost" 
                 size="icon" 
                 onClick={() => setAudioMuted(!audioMuted)}
-                className="bg-[#6A5BE2]/50 text-white hover:bg-[#6A5BE2]/70 rounded-full h-8 w-8"
+                className="bg-[#8023a5]/50 text-white hover:bg-[#8023a5]/70 rounded-full h-8 w-8"
                 disabled={!audioEnabled}
               >
                 {audioMuted || !audioEnabled ? <MicOff size={16} /> : <Mic size={16} />}
@@ -143,7 +143,7 @@ const UserVideo = ({
                 variant="ghost" 
                 size="icon" 
                 onClick={() => setAudioMuted(!audioMuted)}
-                className="bg-[#6A5BE2]/50 text-white hover:bg-[#6A5BE2]/70 rounded-full h-8 w-8"
+                className="bg-[#8023a5]/50 text-white hover:bg-[#8023a5]/70 rounded-full h-8 w-8"
               >
                 {audioMuted ? <VolumeX size={16} /> : <Volume size={16} />}
               </Button>
@@ -163,7 +163,7 @@ const UserVideo = ({
       </div>
       
       {/* User badge */}
-      <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs text-white ${isCurrentUser ? 'bg-[#FF9042]' : 'bg-[#6A5BE2]'}`}>
+      <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs text-white ${isCurrentUser ? 'bg-[#00E1A0]' : 'bg-[#8023a5]'}`}>
         {isCurrentUser ? "You" : "Opponent"}
       </div>
     </div>
