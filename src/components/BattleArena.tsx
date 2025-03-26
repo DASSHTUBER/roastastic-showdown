@@ -112,9 +112,8 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
     toast.info("Leaving battle...");
     setShowLeaveDialog(false);
     
-    setTimeout(() => {
-      navigate('/battles');
-    }, 1000);
+    // Immediately disconnect and navigate
+    navigate('/battles');
   };
   
   const simulateOpponentExtendRequest = () => {
@@ -254,7 +253,10 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
               )}
               
               {/* Video grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 relative">
+                {/* Video border overlay */}
+                <div className="absolute inset-0 z-0 md:border-r-2 border-roast-orange/30 hidden md:block"></div>
+                
                 <UserVideo 
                   username={user1} 
                   isCurrentUser={true} 
@@ -262,10 +264,12 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
                   audioEnabled={audioEnabled}
                   onLeave={() => setShowLeaveDialog(true)}
                   avatarUrl="https://randomuser.me/api/portraits/women/44.jpg"
+                  className="z-10 md:pr-3"
                 />
                 <UserVideo 
                   username={user2}
                   avatarUrl="https://randomuser.me/api/portraits/men/32.jpg"
+                  className="z-10 md:pl-3"
                 />
               </div>
               

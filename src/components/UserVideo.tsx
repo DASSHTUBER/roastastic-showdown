@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Video, VideoOff, Volume, VolumeX, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 interface UserVideoProps {
   username: string;
@@ -13,6 +14,7 @@ interface UserVideoProps {
   audioEnabled?: boolean;
   streamId?: string;
   onLeave?: () => void;
+  className?: string;
 }
 
 const UserVideo = ({ 
@@ -23,7 +25,8 @@ const UserVideo = ({
   videoEnabled = true,
   audioEnabled = true,
   streamId,
-  onLeave
+  onLeave,
+  className
 }: UserVideoProps) => {
   const [audioMuted, setAudioMuted] = useState(isMuted);
   const [videoLoaded, setVideoLoaded] = useState(false);
@@ -62,7 +65,10 @@ const UserVideo = ({
   
   return (
     <div 
-      className="video-container group animate-scale-in relative h-64 md:h-80 rounded-xl overflow-hidden"
+      className={cn(
+        "video-container group animate-scale-in relative h-64 md:h-80 rounded-xl overflow-hidden",
+        className
+      )}
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => setShowControls(false)}
     >

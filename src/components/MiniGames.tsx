@@ -1,12 +1,14 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Timer, Volume2, VolumeX, Mic, Hourglass, SkipForward } from 'lucide-react';
+import { Progress } from "@/components/ui/progress";
 
 interface MiniGamesProps {
   isDemo?: boolean;
-  initialGameType?: 'truth-dare' | 'wheel-challenge';
+  initialGameType?: string;
 }
 
 // Truth or Dare questions and dares
@@ -49,7 +51,7 @@ const challenges = [
   "Do your next roast while doing jumping jacks"
 ];
 
-// New word association prompts
+// Word association prompts
 const wordAssociations = [
   "Start with: Celebrity",
   "Start with: Fashion",
@@ -91,17 +93,51 @@ const comedyCards = [
   "Roast your opponent as if they were running for political office"
 ];
 
+// Rapid fire prompts
+const rapidFirePrompts = [
+  "Roast their cooking skills",
+  "Roast their fashion sense",
+  "Roast their technology skills",
+  "Roast their dancing ability",
+  "Roast their singing voice",
+  "Roast their choice in movies",
+  "Roast their gaming skills",
+  "Roast their workout routine",
+  "Roast their social media habits",
+  "Roast their dating profile",
+  "Roast their texting habits",
+  "Roast their driving skills",
+  "Roast their sleeping habits",
+  "Roast their shopping habits",
+  "Roast their eating habits"
+];
+
 const MiniGames = ({ isDemo = false, initialGameType = 'truth-dare' }: MiniGamesProps) => {
   const [gameType, setGameType] = useState<string>(initialGameType);
   const [isSpinning, setIsSpinning] = useState(false);
   const [currentResult, setCurrentResult] = useState<string | null>(null);
   const [truthOrDare, setTruthOrDare] = useState<'truth' | 'dare'>('truth');
+  const [selectedVoice, setSelectedVoice] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isRapidFireActive, setIsRapidFireActive] = useState(false);
+  const [rapidFireTime, setRapidFireTime] = useState(30);
+  const [rapidFirePrompt, setRapidFirePrompt] = useState<string | null>(null);
+  const [rapidFireCount, setRapidFireCount] = useState(0);
+  const timerRef = useRef<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   
   useEffect(() => {
     // Set the game type based on the prop
     if (initialGameType) {
       setGameType(initialGameType);
     }
+    
+    // Clean up any timers on unmount
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
   }, [initialGameType]);
   
   const spinBottle = () => {
@@ -156,6 +192,81 @@ const MiniGames = ({ isDemo = false, initialGameType = 'truth-dare' }: MiniGames
     }, 1000);
   };
   
+  const startVoiceChanger = (voice: string) => {
+    if (isRecording) return;
+    
+    setSelectedVoice(voice);
+    toast.info(`Activating ${voice} effect...`);
+    
+    // Request microphone access
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(() => {
+        setIsRecording(true);
+        toast.success("Microphone access granted! Speak now with your new voice.");
+        
+        // Simulate voice changing effect with a sound
+        if (audioRef.current) {
+          audioRef.current.play().catch(error => {
+            console.error("Audio playback error:", error);
+          });
+        }
+      })
+      .catch(error => {
+        console.error("Error accessing microphone:", error);
+        toast.error("Could not access your microphone. Please check permissions.");
+      });
+  };
+  
+  const stopVoiceChanger = () => {
+    setIsRecording(false);
+    toast.info("Voice changer stopped");
+    
+    // Stop any audio playback
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  };
+  
+  const startRapidFire = () => {
+    if (isRapidFireActive) return;
+    
+    setIsRapidFireActive(true);
+    setRapidFireTime(30);
+    setRapidFireCount(0);
+    getNewRapidFirePrompt();
+    
+    toast.info("Rapid Fire mode started! 30 seconds on the clock!");
+    
+    // Start the timer
+    timerRef.current = window.setInterval(() => {
+      setRapidFireTime(prev => {
+        if (prev <= 1) {
+          // Time's up
+          clearInterval(timerRef.current!);
+          setIsRapidFireActive(false);
+          toast.success(`Time's up! You came up with ${rapidFireCount} roasts!`);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+  
+  const getNewRapidFirePrompt = () => {
+    const randomPrompt = rapidFirePrompts[Math.floor(Math.random() * rapidFirePrompts.length)];
+    setRapidFirePrompt(randomPrompt);
+  };
+  
+  const submitRapidFireResponse = () => {
+    if (!isRapidFireActive) return;
+    
+    // Increment count and get new prompt
+    setRapidFireCount(prev => prev + 1);
+    getNewRapidFirePrompt();
+    toast.success("Nice one! Keep going!");
+  };
+  
   return (
     <div className="h-full flex flex-col bg-white/30 backdrop-blur-sm rounded-xl border border-white/20">
       <div className="p-3 border-b border-white/20">
@@ -164,25 +275,35 @@ const MiniGames = ({ isDemo = false, initialGameType = 'truth-dare' }: MiniGames
       
       <div className="flex-1 flex flex-col p-4">
         <ToggleGroup type="single" value={gameType} onValueChange={(value) => {
-          if (value) setGameType(value);
-          setCurrentResult(null);
+          if (value) {
+            setGameType(value);
+            setCurrentResult(null);
+            setIsRapidFireActive(false);
+            setIsRecording(false);
+            
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+            }
+          }
         }}>
           <ToggleGroupItem value="truth-dare" className="flex-1">
             🎮 Truth or Dare
           </ToggleGroupItem>
-          <ToggleGroupItem value="wheel-challenge" className="flex-1">
+          <ToggleGroupItem value="wheel" className="flex-1">
             🎡 Wheel of Challenge
           </ToggleGroupItem>
-          {!initialGameType?.includes('truth-dare') && !initialGameType?.includes('wheel-challenge') && (
-            <>
-              <ToggleGroupItem value="word-association" className="flex-1 max-sm:mt-2">
-                🔤 Word Game
-              </ToggleGroupItem>
-              <ToggleGroupItem value="comedy-cards" className="flex-1 max-sm:mt-2">
-                🃏 Comedy Cards
-              </ToggleGroupItem>
-            </>
-          )}
+          <ToggleGroupItem value="word-association" className="flex-1 max-sm:mt-2">
+            🔤 Word Game
+          </ToggleGroupItem>
+          <ToggleGroupItem value="comedy-cards" className="flex-1 max-sm:mt-2">
+            🃏 Comedy Cards
+          </ToggleGroupItem>
+          <ToggleGroupItem value="voice-changer" className="flex-1 max-sm:mt-2">
+            🎤 Voice Changer
+          </ToggleGroupItem>
+          <ToggleGroupItem value="rapid-fire" className="flex-1 max-sm:mt-2">
+            ⚡ Rapid Fire
+          </ToggleGroupItem>
         </ToggleGroup>
         
         <div className="mt-6 flex-1">
@@ -218,7 +339,7 @@ const MiniGames = ({ isDemo = false, initialGameType = 'truth-dare' }: MiniGames
             </div>
           )}
           
-          {gameType === 'wheel-challenge' && (
+          {gameType === 'wheel' && (
             <div className="text-center">
               <div className="my-6 relative">
                 <div className={`w-36 h-36 mx-auto rounded-full bg-gradient-to-r from-roast-red via-roast-orange to-yellow-500 flex items-center justify-center ${isSpinning ? 'animate-spin' : ''}`}>
@@ -288,12 +409,120 @@ const MiniGames = ({ isDemo = false, initialGameType = 'truth-dare' }: MiniGames
             </div>
           )}
           
-          {currentResult && gameType !== 'comedy-cards' && (
+          {gameType === 'voice-changer' && (
+            <div className="text-center">
+              <div className="my-4">
+                <div className="p-4 bg-white/30 rounded-lg mb-4">
+                  <p className="text-sm mb-2">How to play:</p>
+                  <ol className="text-sm text-left list-decimal pl-4">
+                    <li>Choose a voice effect</li>
+                    <li>Give access to your microphone</li>
+                    <li>Speak with your new voice during the roast</li>
+                    <li>Have fun with different characters!</li>
+                  </ol>
+                </div>
+                
+                {isRecording ? (
+                  <div className="my-6">
+                    <div className="h-16 w-full bg-white/40 rounded-lg flex items-center justify-center animate-pulse">
+                      <Mic className="h-6 w-6 text-roast-red mr-2" />
+                      <span className="text-lg font-medium">Recording with {selectedVoice}</span>
+                    </div>
+                    <Button 
+                      onClick={stopVoiceChanger}
+                      className="mt-4 bg-roast-red hover:bg-roast-red/80 text-white"
+                    >
+                      Stop Recording
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 my-4">
+                    {voiceChangers.slice(0, 6).map((voice, index) => (
+                      <Button 
+                        key={index}
+                        onClick={() => startVoiceChanger(voice)}
+                        variant="outline"
+                        className="p-3 h-auto text-sm"
+                      >
+                        <Mic className="h-4 w-4 mr-2" />
+                        {voice}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Hidden audio element for simulating voice effects */}
+                <audio ref={audioRef} src="data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAASAAAeMwAUFBQUFCIiIiIiIjAwMDAwPj4+Pj4+TExMTExZWVlZWVlnZ2dnZ3V1dXV1dYODg4ODkZGRkZGRn5+fn5+frKysrKy6urq6urq6urq6urq6urq6urq6v7+/v7/MzMzMzMzY2NjY2N4AAAAAAAAAAAAAAAAA//tAxAAAAAABPgAAAAATEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV" />
+              </div>
+            </div>
+          )}
+          
+          {gameType === 'rapid-fire' && (
+            <div className="text-center">
+              <div className="my-4">
+                <div className="p-4 bg-white/30 rounded-lg mb-4">
+                  <p className="text-sm mb-2">How to play:</p>
+                  <ol className="text-sm text-left list-decimal pl-4">
+                    <li>Start the 30-second timer</li>
+                    <li>Come up with as many roasts as you can based on the prompts</li>
+                    <li>Hit "Next" after each roast to get a new prompt</li>
+                    <li>See how many you can do before time runs out!</li>
+                  </ol>
+                </div>
+                
+                {isRapidFireActive ? (
+                  <div className="my-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        <Timer className="h-5 w-5 text-roast-red mr-1" />
+                        <span className="text-lg font-bold">{rapidFireTime}s</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Hourglass className="h-5 w-5 text-blue-500 mr-1" />
+                        <span className="text-lg font-bold">{rapidFireCount} Roasts</span>
+                      </div>
+                    </div>
+                    
+                    <Progress value={(rapidFireTime / 30) * 100} className="mb-4" />
+                    
+                    <div className="h-24 w-full bg-white/40 rounded-lg flex items-center justify-center mb-4 p-4">
+                      <span className="text-xl font-bold">{rapidFirePrompt}</span>
+                    </div>
+                    
+                    <Button 
+                      onClick={submitRapidFireResponse}
+                      className="w-full button-gradient py-6"
+                    >
+                      <SkipForward className="h-5 w-5 mr-2" />
+                      Next Roast
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="my-6">
+                    <div className="h-32 w-full bg-white/40 rounded-lg flex flex-col items-center justify-center mb-6">
+                      <span className="text-4xl mb-2">⚡</span>
+                      <span className="text-xl font-bold">Ready to Roast?</span>
+                      <span className="text-sm text-roast-light-gray mt-2">30 seconds to show your skill</span>
+                    </div>
+                    
+                    <Button 
+                      onClick={startRapidFire}
+                      className="button-gradient py-6 px-8"
+                    >
+                      Start Rapid Fire
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {currentResult && gameType !== 'comedy-cards' && gameType !== 'rapid-fire' && gameType !== 'voice-changer' && (
             <div className="mt-6 p-4 bg-white/50 rounded-xl text-center">
               <h4 className="font-medium mb-2">
                 {gameType === 'truth-dare' 
                   ? (truthOrDare === 'truth' ? 'Question:' : 'Dare:') 
-                  : gameType === 'wheel-challenge' 
+                  : gameType === 'wheel' 
                     ? 'Challenge:' 
                     : 'Prompt:'}
               </h4>

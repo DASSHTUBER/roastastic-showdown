@@ -86,7 +86,7 @@ const MiniGames = () => {
               <div className="glass-light rounded-xl p-6">
                 <MiniGameComponent 
                   isDemo={true} 
-                  initialGameType={selectedGame === 'truth-dare' ? 'truth-dare' : 'wheel-challenge'} 
+                  initialGameType={selectedGame} 
                 />
               </div>
             </div>
