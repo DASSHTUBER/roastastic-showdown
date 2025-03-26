@@ -54,16 +54,16 @@ const MiniGames = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground">
+    <div className="min-h-screen w-full bg-[#8023a5]">
       <Navbar />
       
       <div className="pt-28 pb-16 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold">
-              Roast <span className="text-gradient">Mini Games</span>
+            <h1 className="text-3xl md:text-4xl font-bold text-white">
+              Roast <span className="text-[#00E1A0]">Mini Games</span>
             </h1>
-            <p className="mt-4 text-roast-light-gray max-w-2xl mx-auto">
+            <p className="mt-4 text-white/80 max-w-2xl mx-auto">
               Spice up your roast battles with these fun mini games. Practice your wit, improve your comebacks, and have a blast!
             </p>
           </div>
@@ -71,19 +71,19 @@ const MiniGames = () => {
           {selectedGame ? (
             <div className="animate-scale-in">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold">
+                <h2 className="text-xl font-semibold text-white">
                   {games.find(g => g.id === selectedGame)?.title}
                 </h2>
                 <Button
                   variant="outline"
                   onClick={closeGame}
-                  className="rounded-full"
+                  className="rounded-full text-white border-white/30 hover:bg-white/10"
                 >
                   Back to Games
                 </Button>
               </div>
               
-              <div className="glass-light rounded-xl p-6">
+              <div className="gartic-panel rounded-xl p-6">
                 <MiniGameComponent 
                   isDemo={true} 
                   initialGameType={selectedGame} 
@@ -93,13 +93,13 @@ const MiniGames = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
               {games.map((game) => (
-                <Card key={game.id} className="glass-light hover:bg-white/10 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                <Card key={game.id} className="gartic-panel hover:bg-white/10 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-0">
                   <CardHeader>
                     <div className="flex justify-center">{game.icon}</div>
-                    <CardTitle className="text-center mt-4">{game.title}</CardTitle>
+                    <CardTitle className="text-center mt-4 text-white">{game.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription className="text-center">{game.description}</CardDescription>
+                    <CardDescription className="text-center text-white/80">{game.description}</CardDescription>
                   </CardContent>
                   <CardFooter className="flex justify-center">
                     <Button 
@@ -107,7 +107,7 @@ const MiniGames = () => {
                         setSelectedGame(game.id);
                         toast.info(`Loading ${game.title}...`);
                       }}
-                      className="button-gradient rounded-full"
+                      className="gartic-accent-button rounded-full"
                     >
                       Play Now
                     </Button>
@@ -118,6 +118,25 @@ const MiniGames = () => {
           )}
         </div>
       </div>
+      
+      {/* Footer */}
+      <footer className="py-8 px-6 text-white/60">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="mb-4 md:mb-0">
+              <span className="text-white font-bold text-xl">
+                RoastBattle<span className="text-[#00E1A0]">!</span>
+              </span>
+            </div>
+            
+            <div className="flex space-x-6">
+              <a href="#" className="hover:text-white transition-colors">Terms</a>
+              <a href="#" className="hover:text-white transition-colors">Privacy</a>
+              <a href="#" className="hover:text-white transition-colors">Contact</a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

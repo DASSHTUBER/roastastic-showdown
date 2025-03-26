@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from "@/components/ui/button";
-import { Trophy, ArrowRight, Users, Bell, Play } from 'lucide-react';
+import { Trophy, ArrowRight, Users, Bell, Play, Gamepad2 } from 'lucide-react';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +38,7 @@ const Index = () => {
               <div className="flex flex-col items-center text-center">
                 <div className="mb-10">
                   <img 
-                    src="/lovable-uploads/e1f6da6e-5c4d-4bff-8555-fc8a44e7eb8c.png" 
+                    src="/lovable-uploads/1434daba-c739-4933-9b31-90d80c0eca18.png" 
                     alt="RoastBattle Logo" 
                     className="w-full max-w-[400px] mx-auto"
                   />
@@ -139,9 +139,12 @@ const Index = () => {
                     Daily Tournaments
                   </Button>
                   
-                  <Button className="gartic-button px-8 py-6">
-                    <Users className="h-5 w-5 mr-2" />
-                    Live Audience
+                  <Button 
+                    className="gartic-button px-8 py-6"
+                    onClick={() => navigate('/minigames')}
+                  >
+                    <Gamepad2 className="h-5 w-5 mr-2" />
+                    Mini Games
                   </Button>
                 </div>
               </div>
@@ -149,7 +152,7 @@ const Index = () => {
           </section>
           
           {/* Footer */}
-          <footer className="py-8 px-6 text-white/60 absolute bottom-0 w-full">
+          <footer className="py-8 px-6 text-white/60">
             <div className="max-w-7xl mx-auto">
               <div className="flex flex-col md:flex-row justify-between items-center">
                 <div className="mb-4 md:mb-0">
