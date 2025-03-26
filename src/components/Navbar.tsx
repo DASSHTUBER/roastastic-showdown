@@ -20,33 +20,36 @@ const Navbar = () => {
   return (
     <nav 
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 px-6 py-4 ${
-        scrolled ? 'glass-light' : 'bg-transparent'
+        scrolled ? 'bg-[#6A5BE2]/90 backdrop-blur-md shadow-md' : 'bg-transparent'
       }`}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <span className="text-gradient font-bold text-2xl tracking-tight">RoastBattle</span>
+          <span className="text-white font-bold text-2xl tracking-tight">
+            RoastBattle
+            <span className="ml-1 text-[#FF9042]">!</span>
+          </span>
         </Link>
 
         <div className="hidden md:flex items-center space-x-6">
-          <Link to="/" className="font-medium hover:text-roast-red transition-colors">Home</Link>
-          <Link to="/battles" className="font-medium hover:text-roast-red transition-colors">Battles</Link>
-          <Link to="/leaderboard" className="font-medium hover:text-roast-red transition-colors">Leaderboard</Link>
-          <Link to="/minigames" className="font-medium hover:text-roast-red transition-colors">Mini Games</Link>
+          <Link to="/" className="font-medium text-white hover:text-[#FF9042] transition-colors">Home</Link>
+          <Link to="/battles" className="font-medium text-white hover:text-[#FF9042] transition-colors">Battles</Link>
+          <Link to="/leaderboard" className="font-medium text-white hover:text-[#FF9042] transition-colors">Leaderboard</Link>
+          <Link to="/minigames" className="font-medium text-white hover:text-[#FF9042] transition-colors">Mini Games</Link>
         </div>
 
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-white/20">
             <Bell size={20} />
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-white/20">
             <Trophy size={20} />
           </Button>
-          <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-white/20">
             <Users size={20} />
           </Button>
           <Button 
-            className="button-gradient rounded-full text-white"
+            className="bg-[#FF9042] hover:bg-[#FF5757] text-white rounded-full transition-all duration-300"
             onClick={() => navigate('/battles')}
           >
             Battle Now

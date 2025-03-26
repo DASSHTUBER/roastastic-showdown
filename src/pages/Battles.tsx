@@ -53,25 +53,27 @@ const Battles = () => {
   };
   
   return (
-    <div className="min-h-screen w-full bg-background text-foreground">
+    <div className="min-h-screen w-full">
       {isLoading ? (
         <div className="h-screen w-full flex items-center justify-center">
           <div className="flex flex-col items-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-gradient animate-pulse-soft">RoastBattle</h1>
-            <p className="mt-4 text-roast-light-gray animate-pulse-soft">Loading the arena...</p>
+            <h1 className="text-4xl md:text-5xl font-bold text-white animate-pulse-soft">
+              Roast<span className="text-[#FF9042]">Battle</span><span className="text-[#FF5757]">!</span>
+            </h1>
+            <p className="mt-4 text-white/80 animate-pulse-soft">Loading the arena...</p>
           </div>
         </div>
       ) : (
         <>
           <Navbar />
           
-          <section className="pt-28 pb-16 px-6">
+          <section className="pt-28 pb-16 px-6 min-h-screen">
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-8">
-                <h1 className="text-3xl md:text-4xl font-bold">
-                  Live <span className="text-gradient">Roast</span> Battles
+                <h1 className="text-3xl md:text-4xl font-bold text-white">
+                  Live <span className="text-[#FF9042]">Roast</span> Battles
                 </h1>
-                <p className="mt-4 text-roast-light-gray max-w-2xl mx-auto">
+                <p className="mt-4 text-white/80 max-w-2xl mx-auto">
                   Get matched with random opponents and show off your roasting skills while the audience watches and reacts.
                 </p>
               </div>
@@ -79,24 +81,24 @@ const Battles = () => {
               {!isMatching && !matchFound ? (
                 <div className="max-w-2xl mx-auto text-center py-12">
                   <div className="animate-scale-in">
-                    <div className="glass-light rounded-2xl p-8 mb-6">
+                    <div className="gartic-container rounded-2xl p-8 mb-6">
                       <h2 className="text-xl font-semibold mb-4">Ready to Enter the Arena?</h2>
-                      <p className="mb-6 text-roast-light-gray">
+                      <p className="mb-6 text-gray-600">
                         Click below to find a random opponent and start a live roast battle. 
                         Remember to keep it funny, not hurtful!
                       </p>
                       <Button 
                         onClick={checkMediaPermissions}
-                        className="button-gradient rounded-full text-white px-8 py-6 text-lg font-medium"
+                        className="bg-[#FF9042] hover:bg-[#FF5757] rounded-full text-white px-8 py-6 text-lg font-medium"
                       >
                         Start Matchmaking
                       </Button>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-12">
-                      <div className="glass-light rounded-xl p-6">
-                        <h3 className="font-semibold mb-2">Battle Rules</h3>
-                        <ul className="text-sm text-roast-light-gray text-left list-disc pl-4 space-y-2">
+                      <div className="gartic-container rounded-xl p-6">
+                        <h3 className="font-semibold mb-2 text-[#6A5BE2]">Battle Rules</h3>
+                        <ul className="text-sm text-gray-600 text-left list-disc pl-4 space-y-2">
                           <li>Each battle has 3 rounds</li>
                           <li>Free-form roasting (no turns)</li>
                           <li>Audience votes for the winner</li>
@@ -104,16 +106,16 @@ const Battles = () => {
                         </ul>
                       </div>
                       
-                      <div className="glass-light rounded-xl p-6">
-                        <h3 className="font-semibold mb-2">Mini Games</h3>
-                        <p className="text-sm text-roast-light-gray text-left">
+                      <div className="gartic-container rounded-xl p-6">
+                        <h3 className="font-semibold mb-2 text-[#FF9042]">Mini Games</h3>
+                        <p className="text-sm text-gray-600 text-left">
                           Spice up your battle with Truth or Dare, Challenge Wheel, and more interactive games while roasting!
                         </p>
                       </div>
                       
-                      <div className="glass-light rounded-xl p-6">
-                        <h3 className="font-semibold mb-2">Rewards</h3>
-                        <p className="text-sm text-roast-light-gray text-left">
+                      <div className="gartic-container rounded-xl p-6">
+                        <h3 className="font-semibold mb-2 text-[#FF5757]">Rewards</h3>
+                        <p className="text-sm text-gray-600 text-left">
                           Win battles to climb the leaderboard and earn exclusive emotes, backgrounds, and status badges.
                         </p>
                       </div>
@@ -132,7 +134,7 @@ const Battles = () => {
           
           {/* Camera/Mic Permission Dialog */}
           <Dialog open={showPermissionDialog} onOpenChange={setShowPermissionDialog}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md gartic-container">
               <DialogHeader>
                 <DialogTitle>Camera & Microphone Access</DialogTitle>
                 <DialogDescription>
@@ -152,6 +154,7 @@ const Battles = () => {
                     checkMediaPermissions();
                     setShowPermissionDialog(false);
                   }}
+                  className="bg-[#FF9042] hover:bg-[#FF5757]"
                 >
                   Try Again
                 </Button>

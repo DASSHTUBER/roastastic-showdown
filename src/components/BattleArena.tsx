@@ -156,13 +156,13 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
   };
   
   return (
-    <div className={`w-full max-w-6xl mx-auto rounded-2xl overflow-hidden glass-light p-6 ${isDemo ? 'md:p-8' : 'md:p-10'}`}>
+    <div className={`w-full max-w-6xl mx-auto gartic-container overflow-hidden p-6 ${isDemo ? 'md:p-8' : 'md:p-10'}`}>
       {!started && isDemo ? (
         <div className="flex flex-col items-center justify-center py-12 md:py-16">
           <h3 className="text-2xl md:text-3xl font-bold mb-6 text-center">Experience a Live Roast Battle</h3>
           <Button 
             onClick={() => setStarted(true)} 
-            className="button-gradient rounded-full text-white px-8 py-6 text-lg font-medium"
+            className="bg-[#FF9042] hover:bg-[#FF5757] rounded-full text-white px-8 py-6 text-lg font-medium"
           >
             Watch Demo Battle
           </Button>
@@ -176,9 +176,9 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
                 <div>
                   <h2 className="text-xl font-bold">Live Battle {isDemo && "Demo"}</h2>
                   <div className="flex items-center space-x-2 mt-1">
-                    <span className="text-sm bg-roast-red/10 text-roast-red px-2 py-1 rounded-full">Live</span>
-                    <span className="text-sm bg-roast-dark-gray/10 px-2 py-1 rounded-full">
-                      <span className="text-roast-medium-gray mr-1">👁</span> {isDemo ? 238 : Math.floor(Math.random() * 300) + 100}
+                    <span className="text-sm bg-[#FF5757]/10 text-[#FF5757] px-2 py-1 rounded-full">Live</span>
+                    <span className="text-sm bg-[#6A5BE2]/10 px-2 py-1 rounded-full">
+                      <span className="text-[#6A5BE2] mr-1">👁</span> {isDemo ? 238 : Math.floor(Math.random() * 300) + 100}
                     </span>
                   </div>
                 </div>
@@ -189,7 +189,7 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="text-roast-red hover:bg-roast-red/10 hover:text-roast-red flex items-center"
+                      className="text-[#FF5757] hover:bg-[#FF5757]/10 hover:text-[#FF5757] flex items-center"
                       onClick={() => setShowLeaveDialog(true)}
                     >
                       <LogOut className="h-4 w-4 mr-1" />
@@ -205,7 +205,7 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
                           <Settings className="h-4 w-4" />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="sm:max-w-md">
+                      <DialogContent className="sm:max-w-md gartic-container">
                         <DialogHeader>
                           <DialogTitle>Battle Settings</DialogTitle>
                         </DialogHeader>
@@ -253,9 +253,8 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
               )}
               
               {/* Video grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 relative">
-                {/* Video border overlay */}
-                <div className="absolute inset-0 z-0 md:border-r-2 border-roast-orange/30 hidden md:block"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 relative">
+                {/* Video border overlay - removed and using gap instead */}
                 
                 <UserVideo 
                   username={user1} 
@@ -264,12 +263,12 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
                   audioEnabled={audioEnabled}
                   onLeave={() => setShowLeaveDialog(true)}
                   avatarUrl="https://randomuser.me/api/portraits/women/44.jpg"
-                  className="z-10 md:pr-3"
+                  className="z-10"
                 />
                 <UserVideo 
                   username={user2}
                   avatarUrl="https://randomuser.me/api/portraits/men/32.jpg"
-                  className="z-10 md:pl-3"
+                  className="z-10"
                 />
               </div>
               
@@ -281,7 +280,7 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className={`rounded-full ${showMiniGames ? 'bg-roast-orange/10 text-roast-orange border-roast-orange/20' : ''}`}
+                    className={`rounded-full ${showMiniGames ? 'bg-[#FF9042]/10 text-[#FF9042] border-[#FF9042]/20' : ''}`}
                     onClick={toggleMiniGames}
                   >
                     🎮 Mini Games
@@ -290,7 +289,7 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className={`rounded-full ${showChat ? 'bg-roast-red/10 text-roast-red border-roast-red/20' : ''}`}
+                    className={`rounded-full ${showChat ? 'bg-[#FF5757]/10 text-[#FF5757] border-[#FF5757]/20' : ''}`}
                     onClick={() => {
                       setShowChat(!showChat);
                       if (!showChat) {
@@ -307,18 +306,18 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
               {/* Battle controls */}
               <div className="flex justify-between items-center">
                 {battleComplete ? (
-                  <span className="text-sm font-medium text-roast-orange">
+                  <span className="text-sm font-medium text-[#FF9042]">
                     Battle completed! Winner: {battleWinner}
                   </span>
                 ) : (
-                  <span className="text-sm text-roast-light-gray">
+                  <span className="text-sm text-[#6A5BE2]">
                     {isDemo ? 'Demo mode' : 'Free-form roasting! Just speak when you have something to say.'}
                   </span>
                 )}
                 
                 {!isDemo && battleComplete && (
                   <Button 
-                    className="button-gradient rounded-full text-white flex items-center" 
+                    className="bg-[#FF9042] hover:bg-[#FF5757] rounded-full text-white flex items-center" 
                     onClick={() => setShowExtendDialog(true)}
                   >
                     <Clock className="h-4 w-4 mr-2" />
@@ -329,7 +328,7 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
                 {!isDemo && !battleComplete && (
                   <div className="flex space-x-3">
                     <Button 
-                      className="button-gradient rounded-full text-white"
+                      className="bg-[#FF9042] hover:bg-[#FF5757] rounded-full text-white"
                     >
                       Ready to Roast
                     </Button>
@@ -366,7 +365,7 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
       
       {/* Leave Battle Confirmation Dialog */}
       <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md gartic-container">
           <DialogHeader>
             <DialogTitle>Leave Battle</DialogTitle>
             <DialogDescription>
@@ -380,6 +379,7 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
             <Button 
               variant="destructive" 
               onClick={handleLeaveBattle}
+              className="bg-[#FF5757] hover:bg-[#FF5757]/80"
             >
               Leave Battle
             </Button>
@@ -389,7 +389,7 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
       
       {/* Extend Battle Dialog */}
       <Dialog open={showExtendDialog} onOpenChange={setShowExtendDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md gartic-container">
           <DialogHeader>
             <DialogTitle>Extend Battle</DialogTitle>
             <DialogDescription>
@@ -404,7 +404,7 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
             </Button>
             <Button 
               variant="default" 
-              className="button-gradient"
+              className="bg-[#FF9042] hover:bg-[#FF5757]"
               onClick={handleExtendBattle}
             >
               Extend Battle
