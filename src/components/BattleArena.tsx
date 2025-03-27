@@ -120,9 +120,10 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
   const handleLeaveBattle = () => {
     setShowLeaveDialog(false);
     
-    if (currentUserId && !isDemo) {
-      const matchmakingService = MatchmakingService.getInstance();
-      matchmakingService.leaveBattle(currentUserId);
+    const matchmakingService = MatchmakingService.getInstance();
+    const userId = matchmakingService.getCurrentUserId();
+    if (userId) {
+      matchmakingService.leaveBattle(userId);
     }
     
     if (userStream) {
@@ -130,7 +131,9 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
     }
     
     if (onLeave) {
-      onLeave();
+      setTimeout(() => {
+        onLeave();
+      }, 0);
     } else {
       navigate('/', { replace: true });
     }

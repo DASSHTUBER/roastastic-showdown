@@ -71,6 +71,7 @@ const Battles = () => {
       matchmakingService.leaveBattle(userId);
     }
     
+    // Navigate immediately
     navigate('/', { replace: true });
   };
   

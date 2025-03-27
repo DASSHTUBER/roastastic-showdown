@@ -7,6 +7,7 @@ export interface User {
   username: string;
   avatarUrl?: string;
   stream?: MediaStream;
+  isBot?: boolean;
 }
 
 type MatchmakingCallback = (opponent: User) => void;
@@ -21,6 +22,9 @@ class MatchmakingService {
   private userId: string | null = null;
   private matchCheckInterval: number | null = null;
   private lastBroadcastTime: number = 0;
+  private botMatchEnabled: boolean = false;
+  private botMatchDelayMs: number = 15000; // 15 seconds delay before bot match
+  private botMatchTimeout: number | null = null;
 
   private constructor() {
     // Private constructor for singleton
@@ -61,6 +65,13 @@ class MatchmakingService {
   public findMatch(userId: string, callback: MatchmakingCallback, noUsersCallback?: NoUsersCallback): void {
     console.log(`User ${userId} is looking for a match`);
     
+    // Reset bot match settings
+    this.botMatchEnabled = false;
+    if (this.botMatchTimeout) {
+      clearTimeout(this.botMatchTimeout);
+      this.botMatchTimeout = null;
+    }
+    
     // Clean up any existing interval
     if (this.matchCheckInterval !== null) {
       clearInterval(this.matchCheckInterval);
@@ -80,7 +91,7 @@ class MatchmakingService {
       this.noUsersCallbacks.set(userId, noUsersCallback);
     }
     
-    // Broadcast matchmaking request immediately
+    // Broadcast matchmaking request immediately and frequently
     this.broadcastMatchmakingRequest(userId, user.username, user.avatarUrl);
     
     // Check for matches immediately
@@ -88,25 +99,34 @@ class MatchmakingService {
     
     // Set up a regular interval to check for matches and broadcast presence
     this.matchCheckInterval = window.setInterval(() => {
-      this.checkForMatches(userId);
-      
-      // Broadcast matchmaking request every 3 seconds to ensure visibility
+      // Broadcast presence more frequently to ensure visibility
       const now = Date.now();
-      if (now - this.lastBroadcastTime > 3000) {
+      if (now - this.lastBroadcastTime > 1000) { // Every second
         this.broadcastMatchmakingRequest(userId, user.username, user.avatarUrl);
         this.lastBroadcastTime = now;
       }
       
-      // Check if there are no other users after 10 seconds
-      setTimeout(() => {
-        if (this.waitingUsers.size === 1 && this.waitingUsers.has(userId)) {
+      // Check for matches more frequently
+      this.checkForMatches(userId);
+    }, 500); // Check every 500ms
+    
+    // Set timeout for bot match if no users found
+    this.botMatchTimeout = window.setTimeout(() => {
+      // If user is still in waiting pool after delay, enable bot matching
+      if (this.waitingUsers.has(userId)) {
+        this.botMatchEnabled = true;
+        
+        // Check if there are no other users available
+        const otherUsers = Array.from(this.waitingUsers.keys()).filter(id => id !== userId);
+        if (otherUsers.length === 0) {
+          // Notify user that no real opponents found
           const noUsersCallback = this.noUsersCallbacks.get(userId);
           if (noUsersCallback) {
             noUsersCallback();
           }
         }
-      }, 10000);
-    }, 2000);
+      }
+    }, this.botMatchDelayMs);
   }
 
   // Cancel matchmaking
@@ -119,6 +139,11 @@ class MatchmakingService {
     if (this.matchCheckInterval !== null) {
       clearInterval(this.matchCheckInterval);
       this.matchCheckInterval = null;
+    }
+    
+    if (this.botMatchTimeout !== null) {
+      clearTimeout(this.botMatchTimeout);
+      this.botMatchTimeout = null;
     }
     
     // Broadcast cancellation to other users
@@ -160,6 +185,44 @@ class MatchmakingService {
   // Get the current user's ID
   public getCurrentUserId(): string | null {
     return this.userId;
+  }
+
+  // Match with a bot if no real users available
+  public matchWithBot(userId: string): void {
+    if (!this.waitingUsers.has(userId)) return;
+    
+    const botOpponent: User = {
+      id: `bot-${Date.now()}`,
+      username: `RoastBot_${Math.floor(Math.random() * 999)}`,
+      avatarUrl: "https://api.dicebear.com/6.x/bottts/svg?seed=roastbattle",
+      isBot: true
+    };
+    
+    // Remove user from waiting pool
+    const currentUser = this.waitingUsers.get(userId)!;
+    this.waitingUsers.delete(userId);
+    
+    // Notify user of the bot match
+    const currentUserCallback = this.callbacks.get(userId);
+    if (currentUserCallback) {
+      currentUserCallback(botOpponent);
+    }
+    
+    // Clear any match check interval
+    if (this.matchCheckInterval !== null) {
+      clearInterval(this.matchCheckInterval);
+      this.matchCheckInterval = null;
+    }
+    
+    if (this.botMatchTimeout !== null) {
+      clearTimeout(this.botMatchTimeout);
+      this.botMatchTimeout = null;
+    }
+  }
+
+  // Check if bot matching is enabled
+  public isBotMatchEnabled(): boolean {
+    return this.botMatchEnabled;
   }
 
   // Private methods
@@ -206,6 +269,11 @@ class MatchmakingService {
           this.matchCheckInterval = null;
         }
         
+        if (this.botMatchTimeout !== null) {
+          clearTimeout(this.botMatchTimeout);
+          this.botMatchTimeout = null;
+        }
+        
         break;
       }
     }
@@ -237,7 +305,7 @@ class MatchmakingService {
               // Check for matches immediately
               setTimeout(() => {
                 this.checkForMatches(this.userId!);
-              }, 500);
+              }, 200);
             }
           } catch (e) {
             console.error("Error processing matchmaking event", e);

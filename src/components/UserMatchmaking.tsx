@@ -2,19 +2,22 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import UserVideo from './UserVideo';
-import { X, RefreshCw } from 'lucide-react';
+import { X, RefreshCw, User } from 'lucide-react';
 import { toast } from "sonner";
-import MatchmakingService, { User } from '@/services/matchmakingService';
+import MatchmakingService, { User as MatchmakingUser } from '@/services/matchmakingService';
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface UserMatchmakingProps {
   onCancel: () => void;
-  onMatchFound: (opponent: User) => void;
+  onMatchFound: (opponent: MatchmakingUser) => void;
 }
 
 const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
   const [searchTime, setSearchTime] = useState(0);
   const [userStream, setUserStream] = useState<MediaStream | null>(null);
   const [showNoUsersMessage, setShowNoUsersMessage] = useState(false);
+  const [matchmakingState, setMatchmakingState] = useState<'searching' | 'no-users' | 'connecting'>('searching');
+  const [showBotOption, setShowBotOption] = useState(false);
   const userIdRef = useRef<string | null>(null);
   const matchmakingService = MatchmakingService.getInstance();
   
@@ -24,7 +27,13 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
     
     // Start timer
     const interval = setInterval(() => {
-      setSearchTime(prev => prev + 1);
+      setSearchTime(prev => {
+        // After 15 seconds, show bot option if still searching
+        if (prev === 15 && matchmakingState === 'searching') {
+          setShowBotOption(true);
+        }
+        return prev + 1;
+      });
     }, 1000);
     
     return () => {
@@ -40,11 +49,25 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    // Check if bot matching is enabled after waiting period
+    const botCheckInterval = setInterval(() => {
+      if (userIdRef.current && matchmakingService.isBotMatchEnabled() && matchmakingState === 'no-users') {
+        // Bot matching is available but user needs to explicitly confirm
+        setShowBotOption(true);
+      }
+    }, 2000);
+    
+    return () => clearInterval(botCheckInterval);
+  }, [matchmakingState]);
   
   const initializeMatchmaking = async () => {
     try {
       // Reset state
       setShowNoUsersMessage(false);
+      setMatchmakingState('searching');
+      setShowBotOption(false);
       
       // Get user media
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -69,11 +92,16 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
         userId, 
         (opponent) => {
           // When a match is found, notify the parent component
-          toast.success(`Match found with ${opponent.username}!`);
+          if (opponent.isBot) {
+            toast.info(`No real opponents found. Connecting with ${opponent.username}...`);
+          } else {
+            toast.success(`Match found with ${opponent.username}!`);
+          }
           onMatchFound(opponent);
         },
         () => {
           // Called when no users are available after waiting
+          setMatchmakingState('no-users');
           setShowNoUsersMessage(true);
         }
       );
@@ -97,6 +125,13 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
     
     onCancel();
   };
+
+  const handleConnectWithBot = () => {
+    if (userIdRef.current) {
+      setMatchmakingState('connecting');
+      matchmakingService.matchWithBot(userIdRef.current);
+    }
+  };
   
   // Format search time as mm:ss
   const formatTime = (seconds: number) => {
@@ -117,12 +152,32 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
         </div>
         
         <div className="text-center">
-          {showNoUsersMessage ? (
+          {matchmakingState === 'no-users' ? (
             <div className="flex flex-col items-center space-y-4">
               <h3 className="text-xl font-semibold text-white">No opponents found</h3>
-              <p className="text-roast-light-gray mb-4">
+              <p className="text-roast-light-gray mb-2">
                 It seems there are no other users available for a battle right now.
               </p>
+              
+              {showBotOption && (
+                <div className="w-full mb-4">
+                  <Alert variant="default" className="bg-[#8023a5]/20 border-[#8023a5]/40 text-white">
+                    <AlertTitle className="text-white">Want to try with a RoastBot?</AlertTitle>
+                    <AlertDescription className="text-white/80">
+                      No real opponents are online right now. You can battle with our AI RoastBot instead.
+                    </AlertDescription>
+                    <Button
+                      onClick={handleConnectWithBot}
+                      variant="default"
+                      className="rounded-full px-6 mt-4 bg-[#8023a5] hover:bg-[#8023a5]/80 w-full"
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      Connect with RoastBot
+                    </Button>
+                  </Alert>
+                </div>
+              )}
+              
               <Button
                 onClick={initializeMatchmaking}
                 variant="default"
@@ -158,6 +213,25 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
               <p className="text-sm text-roast-light-gray mb-6">
                 Looking for another user who's ready to get roasted...
               </p>
+              
+              {showBotOption && matchmakingState === 'searching' && (
+                <div className="w-full mb-4">
+                  <Alert variant="default" className="bg-[#8023a5]/20 border-[#8023a5]/40 text-white">
+                    <AlertTitle className="text-white">Waiting for a while...</AlertTitle>
+                    <AlertDescription className="text-white/80">
+                      It's taking longer than expected to find a real opponent. Would you like to battle with our AI RoastBot instead?
+                    </AlertDescription>
+                    <Button
+                      onClick={handleConnectWithBot}
+                      variant="default"
+                      className="rounded-full px-6 mt-4 bg-[#8023a5] hover:bg-[#8023a5]/80 w-full"
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      Connect with RoastBot
+                    </Button>
+                  </Alert>
+                </div>
+              )}
               
               <Button 
                 onClick={handleCancelMatchmaking}
