@@ -60,16 +60,16 @@ const Leaderboard = () => {
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   
   return (
-    <div className="min-h-screen w-full bg-background text-foreground">
+    <div className="min-h-screen w-full bg-[#8023a5]">
       <Navbar />
       
       <section className="pt-28 pb-16 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold">
+            <h1 className="text-3xl md:text-4xl font-bold text-white">
               Roast Battle <span className="text-gradient">Leaderboard</span>
             </h1>
-            <p className="mt-4 text-roast-light-gray max-w-2xl mx-auto">
+            <p className="mt-4 text-white/80 max-w-2xl mx-auto">
               See who reigns supreme in the art of roasting. Each round win earns 5 Roast Points. Can you climb to the top?
             </p>
           </div>
@@ -140,14 +140,14 @@ const Leaderboard = () => {
           </div>
           
           {/* Leaderboard Table */}
-          <div className="glass-light rounded-xl overflow-hidden">
+          <div className="gartic-panel rounded-xl overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">Rank</TableHead>
                   <TableHead>Player</TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:text-primary"
+                    className="cursor-pointer hover:text-[#00E1A0]"
                     onClick={() => handleSort('points')}
                   >
                     Points
@@ -156,7 +156,7 @@ const Leaderboard = () => {
                     )}
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:text-primary"
+                    className="cursor-pointer hover:text-[#00E1A0]"
                     onClick={() => handleSort('wins')}
                   >
                     Wins
@@ -165,7 +165,7 @@ const Leaderboard = () => {
                     )}
                   </TableHead>
                   <TableHead 
-                    className="cursor-pointer hover:text-primary"
+                    className="cursor-pointer hover:text-[#00E1A0]"
                     onClick={() => handleSort('losses')}
                   >
                     Losses

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -40,7 +39,6 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
   const [opponentUsername, setOpponentUsername] = useState(opponentData?.username || "RoastMaster99");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
-  // Get current user ID from matchmaking service
   useEffect(() => {
     if (!isDemo) {
       const matchmakingService = MatchmakingService.getInstance();
@@ -83,7 +81,6 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
     if (currentRound < totalRounds) {
       setCurrentRound(currentRound + 1);
     } else {
-      // Determine battle winner
       const winCounts = newRoundWinners.reduce((counts, winner) => {
         counts[winner] = (counts[winner] || 0) + 1;
         return counts;
@@ -103,7 +100,6 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
           setBattleWinner(null);
         }, 5000);
       } else {
-        // For non-demo battles, show the extend dialog option
         setTimeout(() => {
           simulateOpponentExtendRequest();
         }, 5000);
@@ -121,22 +117,18 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
   };
   
   const handleLeaveBattle = () => {
-    toast.info("Leaving battle...");
     setShowLeaveDialog(false);
     
-    // Clean up any connection before leaving
     if (currentUserId && !isDemo) {
       const matchmakingService = MatchmakingService.getInstance();
       matchmakingService.leaveBattle(currentUserId);
     }
     
-    // Stop user media tracks
     if (userStream) {
       userStream.getTracks().forEach(track => track.stop());
     }
     
-    // Immediately navigate to battles page without delays
-    navigate('/battles', { replace: true });
+    navigate('/', { replace: true });
   };
   
   const simulateOpponentExtendRequest = () => {
@@ -156,16 +148,13 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
     setShowExtendDialog(false);
     
     if (opponentWantsToExtend) {
-      // Both users want to extend
       toast.success("Battle extended for 2 more rounds!");
       setCurrentRound(totalRounds + 1);
       setBattleComplete(false);
       setBattleWinner(null);
     } else {
-      // Waiting for opponent
       toast.info("Waiting for opponent to agree...");
       
-      // Simulate opponent agreeing after a delay
       if (!isDemo) {
         setTimeout(() => {
           setOpponentWantsToExtend(true);
@@ -178,7 +167,6 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
     }
   };
   
-  // Get current user's name
   const currentUsername = localStorage.getItem('username') || `User_${currentUserId?.slice(0, 4) || 'anonymous'}`;
   
   return (
@@ -188,7 +176,7 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
           <h3 className="text-2xl md:text-3xl font-bold mb-6 text-center text-white">Experience a Live Roast Battle</h3>
           <Button 
             onClick={() => setStarted(true)} 
-            className="gartic-accent-button px-8 py-6 text-lg font-medium"
+            className="gartic-accent-button px-8 py-6 text-lg font-medium animate-pulse-soft"
           >
             Watch Demo Battle
           </Button>
@@ -197,12 +185,11 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
         <>
           <div className="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-6">
             <div className="flex flex-col space-y-6 lg:w-3/4">
-              {/* Battle info */}
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-xl font-bold text-white">Live Battle {isDemo && "Demo"}</h2>
                   <div className="flex items-center space-x-2 mt-1">
-                    <span className="text-sm bg-[#FF5757]/20 text-[#FF5757] px-2 py-1 rounded-full">Live</span>
+                    <span className="text-sm bg-[#FF5757]/20 text-[#FF5757] px-2 py-1 rounded-full animate-pulse">Live</span>
                     <span className="text-sm bg-[#00E1A0]/20 px-2 py-1 rounded-full">
                       <span className="text-[#00E1A0] mr-1">👁</span> {isDemo ? 238 : Math.floor(Math.random() * 300) + 100}
                     </span>
@@ -210,7 +197,6 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  {/* Leave Battle Button */}
                   {!isDemo && (
                     <Button 
                       variant="outline" 
@@ -223,11 +209,10 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
                     </Button>
                   )}
                   
-                  {/* Settings Dialog */}
                   {!isDemo && (
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="icon" className="rounded-full">
+                        <Button variant="outline" size="icon" className="rounded-full hover:bg-white/10">
                           <Settings className="h-4 w-4" />
                         </Button>
                       </DialogTrigger>
@@ -278,7 +263,6 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
                 />
               )}
               
-              {/* Video grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-10 relative">
                 <UserVideo 
                   username={isDemo ? "JokeSlayer42" : currentUsername} 
@@ -298,7 +282,6 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
                 />
               </div>
               
-              {/* Audience reactions */}
               <div className="flex justify-between items-center">
                 <AudienceReactions />
                 
@@ -306,7 +289,7 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className={`rounded-full ${showMiniGames ? 'bg-[#00E1A0]/10 text-[#00E1A0] border-[#00E1A0]/20' : 'text-white'}`}
+                    className={`rounded-full ${showMiniGames ? 'bg-[#00E1A0]/10 text-[#00E1A0] border-[#00E1A0]/20' : 'text-white hover:bg-white/10'} transition-colors`}
                     onClick={toggleMiniGames}
                   >
                     🎮 Mini Games
@@ -315,7 +298,7 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className={`rounded-full ${showChat ? 'bg-[#FF5757]/10 text-[#FF5757] border-[#FF5757]/20' : 'text-white'}`}
+                    className={`rounded-full ${showChat ? 'bg-[#FF5757]/10 text-[#FF5757] border-[#FF5757]/20' : 'text-white hover:bg-white/10'} transition-colors`}
                     onClick={() => {
                       setShowChat(!showChat);
                       if (!showChat) {
@@ -329,7 +312,6 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
                 </div>
               </div>
               
-              {/* Battle controls */}
               <div className="flex justify-between items-center">
                 {battleComplete ? (
                   <span className="text-sm font-medium text-[#00E1A0]">
@@ -378,7 +360,6 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
         </>
       )}
       
-      {/* Audience Voting Dialog */}
       <AudienceVoting
         isOpen={showVoting}
         onClose={() => setShowVoting(false)}
@@ -389,7 +370,6 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
         isDemo={isDemo}
       />
       
-      {/* Leave Battle Confirmation Dialog */}
       <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
         <DialogContent className="sm:max-w-md gartic-panel">
           <DialogHeader>
@@ -413,7 +393,6 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
         </DialogContent>
       </Dialog>
       
-      {/* Extend Battle Dialog */}
       <Dialog open={showExtendDialog} onOpenChange={setShowExtendDialog}>
         <DialogContent className="sm:max-w-md gartic-panel">
           <DialogHeader>

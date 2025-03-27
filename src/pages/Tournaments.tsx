@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { Button } from "@/components/ui/button";
@@ -25,6 +24,22 @@ const gameIcons = {
   cardGame: '🃏',
   memory: '🧠',
 };
+
+const chessRoasts = [
+  "Did you learn that move from watching paint dry?",
+  "Your chess strategy is like your jokes - predictable and weak.",
+  "Knight to E5? More like 'Goodnight' to your chances of winning.",
+  "That move was so bad, even my calculator is laughing.",
+  "Call that a sacrifice? The only thing you're sacrificing is your dignity."
+];
+
+const ludoRoasts = [
+  "Rolling a 6 won't save your game, just like it won't save your fashion sense.",
+  "You're moving pieces slower than my grandma, and she's 92.",
+  "Need a GPS for that move? Because you seem completely lost.",
+  "That's the most strategic move you've made all day, and it's still terrible.",
+  "Your Ludo skills are like elevator music - forgettable and annoying."
+];
 
 const Tournaments = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -111,12 +126,28 @@ const Tournaments = () => {
   
   const filteredTournaments = tournaments.filter(t => t.status === activeTab);
   
-  const handleJoinTournament = (tournamentId: string) => {
+  const handleJoinTournament = (tournamentId: string, tournamentType?: string) => {
     toast.success("You've joined the tournament! Get ready to compete!");
+    
+    if (tournamentType === 'Chess') {
+      setTimeout(() => {
+        toast("AI Roastmaster says:", {
+          description: chessRoasts[Math.floor(Math.random() * chessRoasts.length)],
+          icon: "♟️",
+        });
+      }, 1500);
+    } else if (tournamentType === 'Ludo') {
+      setTimeout(() => {
+        toast("AI Roastmaster says:", {
+          description: ludoRoasts[Math.floor(Math.random() * ludoRoasts.length)],
+          icon: "🎲",
+        });
+      }, 1500);
+    }
   };
   
   return (
-    <div className="min-h-screen w-full">
+    <div className="min-h-screen w-full bg-[#8023a5]">
       {isLoading ? (
         <div className="h-screen w-full flex items-center justify-center">
           <div className="flex flex-col items-center">
@@ -130,9 +161,9 @@ const Tournaments = () => {
         <>
           <Navbar />
           
-          <section className="pt-28 pb-16 px-6 min-h-screen">
+          <section className="pt-28 pb-16 px-6 min-h-screen bg-[#8023a5] bg-[url('data:image/svg+xml,%3Csvg width=\\'52\\' height=\\'26\\' viewBox=\\'0 0 52 26\\' xmlns=\\'http://www.w3.org/2000/svg\\'%3E%3Cg fill=\\'none\\' fill-rule=\\'evenodd\\'%3E%3Cg fill=\\'%23ffffff\\' fill-opacity=\\'0.05\\'%3E%3Cpath d=\\'M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z\\' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]">
             <div className="max-w-7xl mx-auto">
-              <div className="text-center mb-8">
+              <div className="text-center mb-8 animate-scale-in">
                 <h1 className="text-3xl md:text-4xl font-bold text-white">
                   Daily <span className="text-[#00E1A0]">Tournaments</span>
                 </h1>
@@ -143,7 +174,7 @@ const Tournaments = () => {
               
               {/* Tournament tabs */}
               <div className="flex justify-center mb-8">
-                <div className="bg-[#4a2264]/80 rounded-full p-1 flex">
+                <div className="bg-[#4a2264]/80 rounded-full p-1 flex animate-fade-in">
                   {(['live', 'upcoming', 'completed'] as const).map((tab) => (
                     <button
                       key={tab}
@@ -163,10 +194,10 @@ const Tournaments = () => {
               {/* Tournament cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-scale-in">
                 {filteredTournaments.map((tournament) => (
-                  <div key={tournament.id} className="gartic-panel p-6 rounded-xl">
+                  <div key={tournament.id} className="gartic-panel p-6 rounded-xl hover:scale-105 transition-transform duration-300">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center">
-                        <div className="w-12 h-12 flex items-center justify-center rounded-full bg-[#8023a5] text-2xl">
+                        <div className="w-12 h-12 flex items-center justify-center rounded-full bg-[#8023a5] text-2xl animate-pulse-soft">
                           {gameIcons[tournament.icon]}
                         </div>
                         <div className="ml-3">
@@ -176,7 +207,7 @@ const Tournaments = () => {
                       </div>
                       
                       {tournament.status === 'live' && (
-                        <span className="bg-[#FF5757]/20 text-[#FF5757] text-xs px-2 py-1 rounded-full">
+                        <span className="bg-[#FF5757]/20 text-[#FF5757] text-xs px-2 py-1 rounded-full animate-pulse">
                           Live
                         </span>
                       )}
@@ -201,8 +232,8 @@ const Tournaments = () => {
                     
                     {tournament.status === 'live' && (
                       <Button 
-                        className="gartic-accent-button w-full"
-                        onClick={() => handleJoinTournament(tournament.id)}
+                        className="gartic-accent-button w-full animate-pulse-soft"
+                        onClick={() => handleJoinTournament(tournament.id, tournament.type)}
                       >
                         Join Tournament
                       </Button>
@@ -231,11 +262,11 @@ const Tournaments = () => {
               
               {/* Featured Tournament */}
               {activeTab === 'live' && (
-                <div className="mt-12 gartic-panel p-8 rounded-xl">
+                <div className="mt-12 gartic-panel p-8 rounded-xl animate-fade-in hover:border-[#00E1A0] transition-colors">
                   <div className="flex flex-col md:flex-row justify-between">
                     <div>
                       <div className="flex items-center mb-4">
-                        <div className="w-16 h-16 flex items-center justify-center rounded-full bg-[#00E1A0]/20 text-4xl">
+                        <div className="w-16 h-16 flex items-center justify-center rounded-full bg-[#00E1A0]/20 text-4xl animate-pulse-soft">
                           ♟️
                         </div>
                         <div className="ml-4">
@@ -252,18 +283,21 @@ const Tournaments = () => {
                       <p className="text-white/80 mb-6 max-w-2xl">
                         Join our premium chess tournament with live streaming and commentary. 
                         Compete against skilled players from around the world and win exclusive rewards.
+                        <span className="text-[#FF5757] italic block mt-2">
+                          "Our AI will roast your every move, but don't take it personally - it roasts everyone equally badly!"
+                        </span>
                       </p>
                       
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                        <div className="bg-[#3d1b53] rounded-lg p-3">
+                        <div className="bg-[#3d1b53] rounded-lg p-3 hover:bg-[#4d2b63] transition-colors">
                           <p className="text-[#00E1A0] text-sm font-medium">Grand Prize</p>
                           <p className="text-white">1000 Points + Trophy</p>
                         </div>
-                        <div className="bg-[#3d1b53] rounded-lg p-3">
+                        <div className="bg-[#3d1b53] rounded-lg p-3 hover:bg-[#4d2b63] transition-colors">
                           <p className="text-[#00E1A0] text-sm font-medium">Format</p>
                           <p className="text-white">Swiss System</p>
                         </div>
-                        <div className="bg-[#3d1b53] rounded-lg p-3">
+                        <div className="bg-[#3d1b53] rounded-lg p-3 hover:bg-[#4d2b63] transition-colors">
                           <p className="text-[#00E1A0] text-sm font-medium">Duration</p>
                           <p className="text-white">3 Hours</p>
                         </div>
@@ -272,8 +306,8 @@ const Tournaments = () => {
                     
                     <div className="mt-6 md:mt-0 md:ml-6 flex flex-col justify-center items-center md:items-end">
                       <Button 
-                        className="gartic-accent-button w-full md:w-auto px-8 py-6 text-lg"
-                        onClick={() => handleJoinTournament('featured')}
+                        className="gartic-accent-button w-full md:w-auto px-8 py-6 text-lg animate-pulse-soft"
+                        onClick={() => handleJoinTournament('featured', 'Chess')}
                       >
                         Join Now
                       </Button>
