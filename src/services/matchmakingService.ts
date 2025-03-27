@@ -1,17 +1,9 @@
 
 import { toast } from "sonner";
-
-// Types
-export interface User {
-  id: string;
-  username: string;
-  avatarUrl?: string;
-  stream?: MediaStream;
-  isBot?: boolean;
-}
-
-type MatchmakingCallback = (opponent: User) => void;
-type NoUsersCallback = () => void;
+import { User, MatchmakingCallback, NoUsersCallback } from "./matchmaking/types";
+import { generateUserId, broadcastMatchmakingRequest, broadcastCancellation } from "./matchmaking/utils";
+import { BotMatchService } from "./matchmaking/BotMatchService";
+import { StorageEventService } from "./matchmaking/StorageEventService";
 
 class MatchmakingService {
   private static instance: MatchmakingService;
@@ -22,20 +14,12 @@ class MatchmakingService {
   private userId: string | null = null;
   private matchCheckInterval: number | null = null;
   private lastBroadcastTime: number = 0;
-  private botMatchEnabled: boolean = false;
-  private botMatchDelayMs: number = 15000; // 15 seconds delay before bot match
-  private botMatchTimeout: number | null = null;
+  private botMatchService: BotMatchService;
+  private storageEventService: StorageEventService | null = null;
 
   private constructor() {
-    // Private constructor for singleton
-    this.setupSimulatedServer();
-    
-    // Setup periodic check for matches
-    if (typeof window !== 'undefined') {
-      window.addEventListener('beforeunload', () => {
-        this.cleanupUser();
-      });
-    }
+    this.botMatchService = new BotMatchService();
+    this.storageEventService = new StorageEventService(this.waitingUsers, this.userId);
   }
 
   static getInstance(): MatchmakingService {
@@ -48,7 +32,7 @@ class MatchmakingService {
   // Initialize user and prepare for matchmaking
   public initialize(username: string, avatarUrl?: string): string {
     // Generate a unique ID for this user
-    const userId = this.generateUserId();
+    const userId = generateUserId();
     this.userId = userId;
     
     const user: User = {
@@ -58,6 +42,13 @@ class MatchmakingService {
     };
     
     console.log("Initializing user for matchmaking:", user);
+    
+    // Update the storageEventService with the new userId
+    if (this.storageEventService) {
+      this.storageEventService.cleanup();
+    }
+    this.storageEventService = new StorageEventService(this.waitingUsers, this.userId);
+    
     return userId;
   }
 
@@ -66,11 +57,7 @@ class MatchmakingService {
     console.log(`User ${userId} is looking for a match`);
     
     // Reset bot match settings
-    this.botMatchEnabled = false;
-    if (this.botMatchTimeout) {
-      clearTimeout(this.botMatchTimeout);
-      this.botMatchTimeout = null;
-    }
+    this.botMatchService.resetBotMatch();
     
     // Clean up any existing interval
     if (this.matchCheckInterval !== null) {
@@ -92,7 +79,7 @@ class MatchmakingService {
     }
     
     // Broadcast matchmaking request immediately and frequently
-    this.broadcastMatchmakingRequest(userId, user.username, user.avatarUrl);
+    this.lastBroadcastTime = broadcastMatchmakingRequest(userId, user.username, user.avatarUrl);
     
     // Check for matches immediately
     this.checkForMatches(userId);
@@ -102,8 +89,7 @@ class MatchmakingService {
       // Broadcast presence more frequently to ensure visibility
       const now = Date.now();
       if (now - this.lastBroadcastTime > 1000) { // Every second
-        this.broadcastMatchmakingRequest(userId, user.username, user.avatarUrl);
-        this.lastBroadcastTime = now;
+        this.lastBroadcastTime = broadcastMatchmakingRequest(userId, user.username, user.avatarUrl);
       }
       
       // Check for matches more frequently
@@ -111,11 +97,9 @@ class MatchmakingService {
     }, 500); // Check every 500ms
     
     // Set timeout for bot match if no users found
-    this.botMatchTimeout = window.setTimeout(() => {
-      // If user is still in waiting pool after delay, enable bot matching
+    this.botMatchService.setBotMatchTimeout(() => {
+      // If user is still in waiting pool after delay, check for other users
       if (this.waitingUsers.has(userId)) {
-        this.botMatchEnabled = true;
-        
         // Check if there are no other users available
         const otherUsers = Array.from(this.waitingUsers.keys()).filter(id => id !== userId);
         if (otherUsers.length === 0) {
@@ -126,7 +110,7 @@ class MatchmakingService {
           }
         }
       }
-    }, this.botMatchDelayMs);
+    });
   }
 
   // Cancel matchmaking
@@ -141,18 +125,10 @@ class MatchmakingService {
       this.matchCheckInterval = null;
     }
     
-    if (this.botMatchTimeout !== null) {
-      clearTimeout(this.botMatchTimeout);
-      this.botMatchTimeout = null;
-    }
+    this.botMatchService.clearBotMatchTimeout();
     
     // Broadcast cancellation to other users
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('matchmaking_cancel', JSON.stringify({
-        userId,
-        timestamp: Date.now()
-      }));
-    }
+    broadcastCancellation(userId);
   }
 
   // Clean up user when leaving or closing tab
@@ -191,12 +167,7 @@ class MatchmakingService {
   public matchWithBot(userId: string): void {
     if (!this.waitingUsers.has(userId)) return;
     
-    const botOpponent: User = {
-      id: `bot-${Date.now()}`,
-      username: `RoastBot_${Math.floor(Math.random() * 999)}`,
-      avatarUrl: "https://api.dicebear.com/6.x/bottts/svg?seed=roastbattle",
-      isBot: true
-    };
+    const botOpponent = this.botMatchService.createBotOpponent();
     
     // Remove user from waiting pool
     const currentUser = this.waitingUsers.get(userId)!;
@@ -214,20 +185,12 @@ class MatchmakingService {
       this.matchCheckInterval = null;
     }
     
-    if (this.botMatchTimeout !== null) {
-      clearTimeout(this.botMatchTimeout);
-      this.botMatchTimeout = null;
-    }
+    this.botMatchService.clearBotMatchTimeout();
   }
 
   // Check if bot matching is enabled
   public isBotMatchEnabled(): boolean {
-    return this.botMatchEnabled;
-  }
-
-  // Private methods
-  private generateUserId(): string {
-    return Date.now().toString() + Math.random().toString(36).substring(2, 10);
+    return this.botMatchService.isBotMatchEnabled();
   }
 
   private checkForMatches(currentUserId: string): void {
@@ -269,77 +232,13 @@ class MatchmakingService {
           this.matchCheckInterval = null;
         }
         
-        if (this.botMatchTimeout !== null) {
-          clearTimeout(this.botMatchTimeout);
-          this.botMatchTimeout = null;
-        }
+        this.botMatchService.clearBotMatchTimeout();
         
         break;
       }
     }
   }
-
-  // For testing/demo purposes: simulate a server with multiple connections
-  private setupSimulatedServer(): void {
-    // This simulates other users connecting to the service
-    // In a real app, this would be replaced by actual server connections
-    
-    if (typeof window !== 'undefined') {
-      // Listen for browser storage events to simulate multiple tabs/devices
-      window.addEventListener('storage', (event) => {
-        if (event.key === 'matchmaking_request' && this.userId) {
-          try {
-            const data = JSON.parse(event.newValue || '{}');
-            if (data.userId !== this.userId) {
-              console.log("Detected another user looking for match:", data.userId);
-              
-              // Add this user to our waiting pool if they're not already there
-              const otherUser: User = {
-                id: data.userId,
-                username: data.username,
-                avatarUrl: data.avatarUrl
-              };
-              
-              this.waitingUsers.set(data.userId, otherUser);
-              
-              // Check for matches immediately
-              setTimeout(() => {
-                this.checkForMatches(this.userId!);
-              }, 200);
-            }
-          } catch (e) {
-            console.error("Error processing matchmaking event", e);
-          }
-        } else if (event.key === 'matchmaking_cancel' && this.userId) {
-          try {
-            const data = JSON.parse(event.newValue || '{}');
-            if (data.userId !== this.userId) {
-              console.log("User cancelled matchmaking:", data.userId);
-              this.waitingUsers.delete(data.userId);
-            }
-          } catch (e) {
-            console.error("Error processing matchmaking cancellation event", e);
-          }
-        }
-      });
-    }
-  }
-
-  // Broadcast matchmaking request to other tabs/browsers
-  public broadcastMatchmakingRequest(userId: string, username: string, avatarUrl?: string): void {
-    if (typeof localStorage !== 'undefined') {
-      const requestData = {
-        userId,
-        username,
-        avatarUrl,
-        timestamp: Date.now()
-      };
-      
-      localStorage.setItem('matchmaking_request', JSON.stringify(requestData));
-      this.lastBroadcastTime = Date.now();
-      // This triggers storage events in other tabs/browsers
-    }
-  }
 }
 
 export default MatchmakingService;
+export { User };
