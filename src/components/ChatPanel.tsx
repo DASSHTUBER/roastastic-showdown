@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,9 +12,10 @@ interface Message {
 
 interface ChatPanelProps {
   isDemo?: boolean;
+  opponentName?: string;
 }
 
-const ChatPanel = ({ isDemo = false }: ChatPanelProps) => {
+const ChatPanel = ({ isDemo = false, opponentName = "RoastMaster99" }: ChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -26,7 +26,7 @@ const ChatPanel = ({ isDemo = false }: ChatPanelProps) => {
       const demoMessages: Message[] = [
         { id: 1, user: 'System', text: 'Welcome to the battle chat!', isSystem: true },
         { id: 2, user: 'FireEmoji88', text: '🔥 Let the roasting begin! 🔥' },
-        { id: 3, user: 'LaughingGull42', text: 'RoastMaster99 is gonna get destroyed lol' },
+        { id: 3, user: 'LaughingGull42', text: `${opponentName} is gonna get destroyed lol` },
         { id: 4, user: 'BattleFan23', text: 'my money is on JokeSlayer this time' },
         { id: 5, user: 'ComedyQueen', text: '😂😂😂' },
       ];
@@ -44,7 +44,7 @@ const ChatPanel = ({ isDemo = false }: ChatPanelProps) => {
           'savage!!!',
           'who else is watching from school? 👀',
           'oh snap! didn\'t see that coming',
-          'these two are hilarious',
+          `these two are hilarious`,
           'someone call the fire department 🚒',
           'I can\'t breathe 😂😂',
           'that\'s gotta hurt'
@@ -67,7 +67,7 @@ const ChatPanel = ({ isDemo = false }: ChatPanelProps) => {
         { id: 2, user: 'System', text: 'Be respectful and enjoy the show!', isSystem: true }
       ]);
     }
-  }, [isDemo]);
+  }, [isDemo, opponentName]);
   
   // Auto-scroll to bottom when messages change
   useEffect(() => {
