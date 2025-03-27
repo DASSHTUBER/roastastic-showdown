@@ -16,9 +16,10 @@ import MatchmakingService, { User } from '@/services/matchmakingService';
 interface BattleArenaProps {
   isDemo?: boolean;
   opponentData?: User | null;
+  onLeave?: () => void;
 }
 
-const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
+const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps) => {
   const navigate = useNavigate();
   const [currentRound, setCurrentRound] = useState(1);
   const totalRounds = 3;
@@ -128,7 +129,11 @@ const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
       userStream.getTracks().forEach(track => track.stop());
     }
     
-    navigate('/', { replace: true });
+    if (onLeave) {
+      onLeave();
+    } else {
+      navigate('/', { replace: true });
+    }
   };
   
   const simulateOpponentExtendRequest = () => {

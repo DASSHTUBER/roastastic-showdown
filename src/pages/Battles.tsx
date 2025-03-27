@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -8,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { User } from '@/services/matchmakingService';
+import MatchmakingService from '@/services/matchmakingService';
 
 const Battles = () => {
   const [isMatching, setIsMatching] = useState(false);
@@ -23,8 +23,18 @@ const Battles = () => {
       setIsLoading(false);
     }, 1000);
     
-    return () => clearTimeout(timer);
-  }, []);
+    return () => {
+      clearTimeout(timer);
+      // Clean up any active matchmaking on unmount
+      if (!matchFound) {
+        const matchmakingService = MatchmakingService.getInstance();
+        const userId = matchmakingService.getCurrentUserId();
+        if (userId) {
+          matchmakingService.cancelMatchmaking(userId);
+        }
+      }
+    };
+  }, [matchFound]);
   
   const checkMediaPermissions = async () => {
     try {
@@ -50,6 +60,18 @@ const Battles = () => {
     setOpponent(foundOpponent);
     setMatchFound(true);
     toast.success(`Opponent found: ${foundOpponent.username}! Get ready to roast!`);
+  };
+  
+  // Force immediate navigation when leaving battle
+  const handleLeaveBattle = () => {
+    // Clean up any active matchmaking
+    const matchmakingService = MatchmakingService.getInstance();
+    const userId = matchmakingService.getCurrentUserId();
+    if (userId) {
+      matchmakingService.leaveBattle(userId);
+    }
+    
+    navigate('/', { replace: true });
   };
   
   return (
@@ -129,7 +151,10 @@ const Battles = () => {
                 />
               ) : (
                 <div className="animate-scale-in">
-                  <BattleArena opponentData={opponent} />
+                  <BattleArena 
+                    opponentData={opponent} 
+                    onLeave={handleLeaveBattle}
+                  />
                 </div>
               )}
             </div>

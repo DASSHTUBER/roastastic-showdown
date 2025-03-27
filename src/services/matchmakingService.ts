@@ -10,17 +10,28 @@ export interface User {
 }
 
 type MatchmakingCallback = (opponent: User) => void;
+type NoUsersCallback = () => void;
 
 class MatchmakingService {
   private static instance: MatchmakingService;
   private waitingUsers: Map<string, User> = new Map();
   private activeMatches: Map<string, string> = new Map(); // userId -> opponentId
   private callbacks: Map<string, MatchmakingCallback> = new Map();
+  private noUsersCallbacks: Map<string, NoUsersCallback> = new Map();
   private userId: string | null = null;
+  private matchCheckInterval: number | null = null;
+  private lastBroadcastTime: number = 0;
 
   private constructor() {
     // Private constructor for singleton
     this.setupSimulatedServer();
+    
+    // Setup periodic check for matches
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', () => {
+        this.cleanupUser();
+      });
+    }
   }
 
   static getInstance(): MatchmakingService {
@@ -47,12 +58,14 @@ class MatchmakingService {
   }
 
   // Start looking for a match
-  public findMatch(userId: string, callback: MatchmakingCallback): void {
+  public findMatch(userId: string, callback: MatchmakingCallback, noUsersCallback?: NoUsersCallback): void {
     console.log(`User ${userId} is looking for a match`);
     
-    // In a real implementation, this would connect to a server
-    // For now, we'll simulate the process locally
-
+    // Clean up any existing interval
+    if (this.matchCheckInterval !== null) {
+      clearInterval(this.matchCheckInterval);
+    }
+    
     const user = {
       id: userId,
       username: localStorage.getItem('username') || `User_${userId.slice(0, 4)}`,
@@ -63,8 +76,37 @@ class MatchmakingService {
     this.waitingUsers.set(userId, user);
     this.callbacks.set(userId, callback);
     
-    // Check for available matches
+    if (noUsersCallback) {
+      this.noUsersCallbacks.set(userId, noUsersCallback);
+    }
+    
+    // Broadcast matchmaking request immediately
+    this.broadcastMatchmakingRequest(userId, user.username, user.avatarUrl);
+    
+    // Check for matches immediately
     this.checkForMatches(userId);
+    
+    // Set up a regular interval to check for matches and broadcast presence
+    this.matchCheckInterval = window.setInterval(() => {
+      this.checkForMatches(userId);
+      
+      // Broadcast matchmaking request every 3 seconds to ensure visibility
+      const now = Date.now();
+      if (now - this.lastBroadcastTime > 3000) {
+        this.broadcastMatchmakingRequest(userId, user.username, user.avatarUrl);
+        this.lastBroadcastTime = now;
+      }
+      
+      // Check if there are no other users after 10 seconds
+      setTimeout(() => {
+        if (this.waitingUsers.size === 1 && this.waitingUsers.has(userId)) {
+          const noUsersCallback = this.noUsersCallbacks.get(userId);
+          if (noUsersCallback) {
+            noUsersCallback();
+          }
+        }
+      }, 10000);
+    }, 2000);
   }
 
   // Cancel matchmaking
@@ -72,6 +114,28 @@ class MatchmakingService {
     console.log(`User ${userId} cancelled matchmaking`);
     this.waitingUsers.delete(userId);
     this.callbacks.delete(userId);
+    this.noUsersCallbacks.delete(userId);
+    
+    if (this.matchCheckInterval !== null) {
+      clearInterval(this.matchCheckInterval);
+      this.matchCheckInterval = null;
+    }
+    
+    // Broadcast cancellation to other users
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('matchmaking_cancel', JSON.stringify({
+        userId,
+        timestamp: Date.now()
+      }));
+    }
+  }
+
+  // Clean up user when leaving or closing tab
+  private cleanupUser(): void {
+    if (this.userId) {
+      this.cancelMatchmaking(this.userId);
+      this.leaveBattle(this.userId);
+    }
   }
 
   // Leave an active battle
@@ -104,8 +168,10 @@ class MatchmakingService {
   }
 
   private checkForMatches(currentUserId: string): void {
-    // In a real implementation, this would be handled by a backend service
-    // For local simulation, we'll match with any other user in the waiting pool
+    // Only proceed if user is still in waiting pool
+    if (!this.waitingUsers.has(currentUserId)) {
+      return;
+    }
     
     for (const [userId, user] of this.waitingUsers.entries()) {
       if (userId !== currentUserId) {
@@ -134,6 +200,12 @@ class MatchmakingService {
           opponentCallback(currentUser);
         }
         
+        // Clear any match check interval
+        if (this.matchCheckInterval !== null) {
+          clearInterval(this.matchCheckInterval);
+          this.matchCheckInterval = null;
+        }
+        
         break;
       }
     }
@@ -153,7 +225,7 @@ class MatchmakingService {
             if (data.userId !== this.userId) {
               console.log("Detected another user looking for match:", data.userId);
               
-              // Add this user to our waiting pool
+              // Add this user to our waiting pool if they're not already there
               const otherUser: User = {
                 id: data.userId,
                 username: data.username,
@@ -162,13 +234,23 @@ class MatchmakingService {
               
               this.waitingUsers.set(data.userId, otherUser);
               
-              // Check for matches
+              // Check for matches immediately
               setTimeout(() => {
                 this.checkForMatches(this.userId!);
-              }, 1000);
+              }, 500);
             }
           } catch (e) {
             console.error("Error processing matchmaking event", e);
+          }
+        } else if (event.key === 'matchmaking_cancel' && this.userId) {
+          try {
+            const data = JSON.parse(event.newValue || '{}');
+            if (data.userId !== this.userId) {
+              console.log("User cancelled matchmaking:", data.userId);
+              this.waitingUsers.delete(data.userId);
+            }
+          } catch (e) {
+            console.error("Error processing matchmaking cancellation event", e);
           }
         }
       });
@@ -186,6 +268,7 @@ class MatchmakingService {
       };
       
       localStorage.setItem('matchmaking_request', JSON.stringify(requestData));
+      this.lastBroadcastTime = Date.now();
       // This triggers storage events in other tabs/browsers
     }
   }
