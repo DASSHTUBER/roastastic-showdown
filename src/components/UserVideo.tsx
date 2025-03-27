@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Video, VideoOff, Volume, VolumeX, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ interface UserVideoProps {
   videoEnabled?: boolean;
   audioEnabled?: boolean;
   streamId?: string;
+  stream?: MediaStream;
   onLeave?: () => void;
   className?: string;
 }
@@ -25,6 +25,7 @@ const UserVideo = ({
   videoEnabled = true,
   audioEnabled = true,
   streamId,
+  stream,
   onLeave,
   className
 }: UserVideoProps) => {
@@ -36,21 +37,29 @@ const UserVideo = ({
   // Handle video stream
   useEffect(() => {
     const setupVideoStream = async () => {
+      // If an external stream is provided, use it
+      if (stream && videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setVideoLoaded(true);
+        return;
+      }
+      
+      // Otherwise, if this is the current user and video is enabled, get user media
       if (!isCurrentUser || !videoEnabled) return;
       
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ 
           video: videoEnabled, 
           audio: audioEnabled 
         });
         
         if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+          videoRef.current.srcObject = mediaStream;
           setVideoLoaded(true);
         }
         
         return () => {
-          stream.getTracks().forEach(track => track.stop());
+          mediaStream.getTracks().forEach(track => track.stop());
         };
       } catch (error) {
         console.error("Error accessing media devices:", error);
@@ -58,7 +67,7 @@ const UserVideo = ({
     };
     
     setupVideoStream();
-  }, [isCurrentUser, videoEnabled, audioEnabled]);
+  }, [isCurrentUser, videoEnabled, audioEnabled, stream]);
   
   // Apply video enabled/disabled state for current user
   const isVideoDisabled = isCurrentUser ? !videoEnabled : false;
@@ -94,6 +103,7 @@ const UserVideo = ({
         playsInline
         muted={isCurrentUser || audioMuted}
         className={`w-full h-full object-cover ${videoLoaded && !isVideoDisabled ? 'opacity-100' : 'opacity-0'} transition-opacity duration-700`}
+        onLoadedData={() => setVideoLoaded(true)}
       />
       
       {/* Fallback background when no video */}

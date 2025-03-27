@@ -12,12 +12,14 @@ import { MessageCircle, Settings, Clock, LogOut } from 'lucide-react';
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import MatchmakingService, { User } from '@/services/matchmakingService';
 
 interface BattleArenaProps {
   isDemo?: boolean;
+  opponentData?: User | null;
 }
 
-const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
+const BattleArena = ({ isDemo = false, opponentData }: BattleArenaProps) => {
   const navigate = useNavigate();
   const [currentRound, setCurrentRound] = useState(1);
   const totalRounds = 3;
@@ -34,9 +36,18 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
   const [showExtendDialog, setShowExtendDialog] = useState(false);
   const [opponentWantsToExtend, setOpponentWantsToExtend] = useState(false);
   const [userWantsToExtend, setUserWantsToExtend] = useState(false);
+  const [userStream, setUserStream] = useState<MediaStream | null>(null);
+  const [opponentUsername, setOpponentUsername] = useState(opponentData?.username || "RoastMaster99");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
-  const user1 = "JokeSlayer42";
-  const user2 = "RoastMaster99";
+  // Get current user ID from matchmaking service
+  useEffect(() => {
+    if (!isDemo) {
+      const matchmakingService = MatchmakingService.getInstance();
+      const userId = matchmakingService.getCurrentUserId();
+      setCurrentUserId(userId);
+    }
+  }, [isDemo]);
   
   useEffect(() => {
     if (!isDemo && !started) {
@@ -50,7 +61,8 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
   
   const requestMediaPermissions = async () => {
     try {
-      await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setUserStream(stream);
       toast.success("Camera and microphone access granted!");
     } catch (error) {
       toast.error("Please allow camera and microphone access for the full experience");
@@ -112,6 +124,17 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
     toast.info("Leaving battle...");
     setShowLeaveDialog(false);
     
+    // Clean up any connection before leaving
+    if (currentUserId && !isDemo) {
+      const matchmakingService = MatchmakingService.getInstance();
+      matchmakingService.leaveBattle(currentUserId);
+    }
+    
+    // Stop user media tracks
+    if (userStream) {
+      userStream.getTracks().forEach(track => track.stop());
+    }
+    
     // Immediately navigate to battles page without delays
     navigate('/battles', { replace: true });
   };
@@ -119,7 +142,7 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
   const simulateOpponentExtendRequest = () => {
     if (!isDemo && battleComplete) {
       setOpponentWantsToExtend(true);
-      toast.info(`${user2} wants to extend the battle for more rounds!`, {
+      toast.info(`${opponentUsername} wants to extend the battle for more rounds!`, {
         action: {
           label: "View",
           onClick: () => setShowExtendDialog(true)
@@ -154,6 +177,9 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
       }
     }
   };
+  
+  // Get current user's name
+  const currentUsername = localStorage.getItem('username') || `User_${currentUserId?.slice(0, 4) || 'anonymous'}`;
   
   return (
     <div className={`w-full max-w-6xl mx-auto gartic-container overflow-hidden p-6 ${isDemo ? 'md:p-8' : 'md:p-10'}`}>
@@ -255,18 +281,20 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
               {/* Video grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-10 relative">
                 <UserVideo 
-                  username={user1} 
+                  username={isDemo ? "JokeSlayer42" : currentUsername} 
                   isCurrentUser={true} 
                   videoEnabled={videoEnabled}
                   audioEnabled={audioEnabled}
                   onLeave={() => setShowLeaveDialog(true)}
                   avatarUrl="https://randomuser.me/api/portraits/women/44.jpg"
                   className="z-10"
+                  stream={userStream || undefined}
                 />
                 <UserVideo 
-                  username={user2}
+                  username={opponentUsername}
                   avatarUrl="https://randomuser.me/api/portraits/men/32.jpg"
                   className="z-10"
+                  stream={opponentData?.stream}
                 />
               </div>
               
@@ -337,7 +365,7 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
             
             {showChat && (
               <div className="lg:w-1/4 h-full">
-                <ChatPanel isDemo={isDemo} />
+                <ChatPanel isDemo={isDemo} opponentName={opponentUsername} />
               </div>
             )}
             
@@ -356,8 +384,8 @@ const BattleArena = ({ isDemo = false }: BattleArenaProps) => {
         onClose={() => setShowVoting(false)}
         onVoteComplete={handleVoteComplete}
         currentRound={currentRound}
-        user1={user1}
-        user2={user2}
+        user1={isDemo ? "JokeSlayer42" : currentUsername}
+        user2={opponentUsername}
         isDemo={isDemo}
       />
       

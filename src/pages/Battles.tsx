@@ -7,10 +7,12 @@ import UserMatchmaking from '@/components/UserMatchmaking';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { User } from '@/services/matchmakingService';
 
 const Battles = () => {
   const [isMatching, setIsMatching] = useState(false);
   const [matchFound, setMatchFound] = useState(false);
+  const [opponent, setOpponent] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
   const navigate = useNavigate();
@@ -36,20 +38,18 @@ const Battles = () => {
   
   const startMatchmaking = () => {
     setIsMatching(true);
-    toast.info("Looking for an opponent...");
-    
-    // Simulate matchmaking process
-    const matchTimer = setTimeout(() => {
-      setMatchFound(true);
-      toast.success("Opponent found! Get ready to roast!");
-    }, 3500);
-    
-    return () => clearTimeout(matchTimer);
+    toast.info("Looking for a real opponent...");
   };
   
   const cancelMatchmaking = () => {
     setIsMatching(false);
     toast.info("Matchmaking cancelled");
+  };
+  
+  const handleMatchFound = (foundOpponent: User) => {
+    setOpponent(foundOpponent);
+    setMatchFound(true);
+    toast.success(`Opponent found: ${foundOpponent.username}! Get ready to roast!`);
   };
   
   return (
@@ -74,7 +74,7 @@ const Battles = () => {
                   Live <span className="neon-text-green">Roast</span> Battles
                 </h1>
                 <p className="mt-4 text-white/80 max-w-2xl mx-auto">
-                  Get matched with random opponents and show off your roasting skills while the audience watches and reacts.
+                  Get matched with real opponents and show off your roasting skills while the audience watches and reacts.
                 </p>
               </div>
               
@@ -84,7 +84,7 @@ const Battles = () => {
                     <div className="gartic-panel rounded-2xl p-8 mb-6">
                       <h2 className="text-xl font-semibold mb-4 text-white">Ready to Enter the Arena?</h2>
                       <p className="mb-6 text-white/80">
-                        Click below to find a random opponent and start a live roast battle. 
+                        Click below to find a real opponent and start a live roast battle. 
                         Remember to keep it funny, not hurtful!
                       </p>
                       <Button 
@@ -123,10 +123,13 @@ const Battles = () => {
                   </div>
                 </div>
               ) : !matchFound ? (
-                <UserMatchmaking onCancel={cancelMatchmaking} />
+                <UserMatchmaking 
+                  onCancel={cancelMatchmaking} 
+                  onMatchFound={handleMatchFound}
+                />
               ) : (
                 <div className="animate-scale-in">
-                  <BattleArena />
+                  <BattleArena opponentData={opponent} />
                 </div>
               )}
             </div>
