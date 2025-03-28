@@ -1,12 +1,20 @@
 
 import { useState, useEffect } from 'react';
-import { Bell, Trophy, Users, Volume2 } from 'lucide-react';
+import { Bell, Trophy, Users, LogOut, User } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
+  const { user, username, signOut } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,6 +24,11 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
     <nav 
@@ -53,6 +66,34 @@ const Navbar = () => {
           <Button variant="ghost" size="icon" className="rounded-full text-white hover:bg-white/20">
             <Users size={20} />
           </Button>
+          
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  className="gartic-button transition-all duration-300"
+                >
+                  <User className="mr-2 h-4 w-4" /> {username || 'Account'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-[#8023a5] text-white border-white/20">
+                <DropdownMenuItem 
+                  className="hover:bg-white/10 cursor-pointer flex gap-2"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="h-4 w-4" /> Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button 
+              className="gartic-accent-button transition-all duration-300"
+              onClick={() => navigate('/auth')}
+            >
+              Sign In
+            </Button>
+          )}
+          
           <Button 
             className="gartic-accent-button transition-all duration-300"
             onClick={() => navigate('/battles')}

@@ -4,10 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from "@/components/ui/button";
 import { Trophy, ArrowRight, Users, Bell, Play, Gamepad2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const { username } = useAuth();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -45,56 +47,33 @@ const Index = () => {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
-                  {/* Anonymous Play Panel */}
-                  <div className="gartic-panel p-6 rounded-xl col-span-1 flex flex-col items-center">
-                    <h2 className="text-xl font-bold mb-4 text-[#00E1A0] drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)]">
-                      ANONYMOUS
-                    </h2>
-                    <div className="mb-6 flex-grow flex items-center justify-center">
-                      <div className="w-32 h-32 rounded-full bg-[#8023a5] flex items-center justify-center">
-                        <span className="text-4xl">🎭</span>
-                      </div>
-                    </div>
-                    <Button 
-                      className="gartic-accent-button w-full flex gap-2 items-center justify-center py-6"
-                      onClick={() => navigate('/battles')}
-                    >
-                      <Play className="h-5 w-5" />
-                      <span className="font-bold">START</span>
-                    </Button>
-                  </div>
+                  {/* Anonymous Play Panel - Removed since we require authentication */}
                   
-                  {/* Middle Panel */}
-                  <div className="gartic-panel p-6 rounded-xl col-span-1">
+                  {/* Middle Panel - Now the main panel */}
+                  <div className="gartic-panel p-6 rounded-xl col-span-1 md:col-span-3">
                     <h2 className="text-xl font-bold mb-4 text-white text-center">
-                      AUTHENTICATED
+                      {username ? `Welcome, ${username}!` : 'Welcome to RoastBattle!'}
                     </h2>
-                    <div className="mb-6">
+                    <div className="mb-6 text-center">
                       <h3 className="text-center text-white mb-4">
-                        CHOOSE A CHARACTER<br />
-                        AND A NICKNAME
+                        Ready to battle with words?
                       </h3>
-                      <input 
-                        type="text" 
-                        placeholder="CoolNickname2644" 
-                        className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white text-center"
-                      />
                     </div>
                     <Button 
                       className="gartic-button w-full flex gap-2 items-center justify-center py-6 mt-auto"
                       onClick={() => navigate('/battles')}
                     >
                       <Play className="h-5 w-5" />
-                      <span className="font-bold">START</span>
+                      <span className="font-bold">START BATTLE</span>
                     </Button>
                   </div>
                   
                   {/* How To Play Panel */}
-                  <div className="gartic-panel p-6 rounded-xl col-span-1">
+                  <div className="gartic-panel p-6 rounded-xl col-span-1 md:col-span-3">
                     <h2 className="text-xl font-bold mb-4 text-[#00E1A0] text-center drop-shadow-[0_2px_2px_rgba(0,0,0,0.3)]">
                       HOW TO PLAY
                     </h2>
-                    <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div>
                         <h3 className="font-bold text-white mb-2">1. JOIN BATTLE</h3>
                         <p className="text-white/80 text-sm">
