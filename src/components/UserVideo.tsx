@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Video, VideoOff, Volume, VolumeX, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -68,9 +69,19 @@ const UserVideo = ({
     
     setupVideoStream();
   }, [isCurrentUser, videoEnabled, audioEnabled, stream]);
+
+  // Apply video enabled/disabled state
+  useEffect(() => {
+    if (stream) {
+      const videoTracks = stream.getVideoTracks();
+      videoTracks.forEach(track => {
+        track.enabled = videoEnabled;
+      });
+    }
+  }, [videoEnabled, stream]);
   
   // Apply video enabled/disabled state for current user
-  const isVideoDisabled = isCurrentUser ? !videoEnabled : false;
+  const isVideoDisabled = !videoEnabled;
   
   return (
     <div 
@@ -181,3 +192,4 @@ const UserVideo = ({
 };
 
 export default UserVideo;
+

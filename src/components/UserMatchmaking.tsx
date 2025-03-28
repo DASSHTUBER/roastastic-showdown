@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import UserVideo from './UserVideo';
-import { X, RefreshCw, User } from 'lucide-react';
+import { X, RefreshCw, User, Camera, CameraOff } from 'lucide-react';
 import { toast } from "sonner";
 import MatchmakingService, { User as MatchmakingUser } from '@/services/matchmakingService';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -18,6 +18,7 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
   const [showNoUsersMessage, setShowNoUsersMessage] = useState(false);
   const [matchmakingState, setMatchmakingState] = useState<'searching' | 'no-users' | 'connecting'>('searching');
   const [showBotOption, setShowBotOption] = useState(false);
+  const [cameraEnabled, setCameraEnabled] = useState(true);
   const userIdRef = useRef<string | null>(null);
   const matchmakingService = MatchmakingService.getInstance();
   
@@ -68,6 +69,7 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
       setShowNoUsersMessage(false);
       setMatchmakingState('searching');
       setShowBotOption(false);
+      setCameraEnabled(true);
       
       // Get user media
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -133,6 +135,19 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
     }
   };
   
+  const toggleCamera = () => {
+    if (userStream) {
+      const videoTracks = userStream.getVideoTracks();
+      
+      videoTracks.forEach(track => {
+        track.enabled = !cameraEnabled;
+      });
+      
+      setCameraEnabled(!cameraEnabled);
+      toast.info(`Camera ${cameraEnabled ? 'disabled' : 'enabled'}`);
+    }
+  };
+  
   // Format search time as mm:ss
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -148,6 +163,7 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
             username="You" 
             isCurrentUser={true}
             stream={userStream || undefined}
+            videoEnabled={cameraEnabled}
           />
         </div>
         
@@ -233,14 +249,24 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
                 </div>
               )}
               
-              <Button 
-                onClick={handleCancelMatchmaking}
-                variant="outline" 
-                className="rounded-full px-4"
-              >
-                <X className="mr-2 h-4 w-4" />
-                Cancel
-              </Button>
+              <div className="flex space-x-2 justify-center mb-4">
+                <Button 
+                  onClick={toggleCamera}
+                  variant="outline" 
+                  className="rounded-full px-4"
+                >
+                  {cameraEnabled ? <CameraOff className="mr-2 h-4 w-4" /> : <Camera className="mr-2 h-4 w-4" />}
+                  {cameraEnabled ? 'Disable Camera' : 'Enable Camera'}
+                </Button>
+                <Button 
+                  onClick={handleCancelMatchmaking}
+                  variant="outline" 
+                  className="rounded-full px-4"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Cancel
+                </Button>
+              </div>
             </>
           )}
         </div>
@@ -250,3 +276,4 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
 };
 
 export default UserMatchmaking;
+

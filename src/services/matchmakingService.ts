@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { User, MatchmakingCallback, NoUsersCallback } from "./matchmaking/types";
 import { generateUserId, broadcastMatchmakingRequest, broadcastCancellation } from "./matchmaking/utils";
@@ -15,10 +16,26 @@ class MatchmakingService {
   private lastBroadcastTime: number = 0;
   private botMatchService: BotMatchService;
   private storageEventService: StorageEventService | null = null;
+  private broadcastChannel: BroadcastChannel | null = null;
 
   private constructor() {
     this.botMatchService = new BotMatchService();
     this.storageEventService = new StorageEventService(this.waitingUsers, this.userId);
+    
+    // Initialize BroadcastChannel for cross-device communication if available
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        this.broadcastChannel = new BroadcastChannel('matchmaking_channel');
+        this.setupBroadcastListeners();
+      } catch (error) {
+        console.error('BroadcastChannel not supported:', error);
+      }
+    }
+    
+    // Add window unload listener to clean up resources
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', this.cleanupUser.bind(this));
+    }
   }
 
   static getInstance(): MatchmakingService {
@@ -26,6 +43,47 @@ class MatchmakingService {
       MatchmakingService.instance = new MatchmakingService();
     }
     return MatchmakingService.instance;
+  }
+
+  private setupBroadcastListeners(): void {
+    if (this.broadcastChannel) {
+      this.broadcastChannel.onmessage = (event) => {
+        const { type, data } = event.data;
+        
+        switch (type) {
+          case 'matchmaking_request':
+            if (data.userId !== this.userId) {
+              console.log("Received matchmaking request from another device:", data.userId);
+              this.waitingUsers.set(data.userId, {
+                id: data.userId,
+                username: data.username,
+                avatarUrl: data.avatarUrl
+              });
+            }
+            break;
+            
+          case 'matchmaking_cancel':
+            if (data.userId !== this.userId) {
+              console.log("User cancelled matchmaking (broadcast):", data.userId);
+              this.waitingUsers.delete(data.userId);
+            }
+            break;
+            
+          case 'match_accept':
+            if (data.opponentId === this.userId) {
+              console.log("Match accepted by:", data.userId);
+              // Handle match acceptance
+            }
+            break;
+        }
+      };
+    }
+  }
+
+  private broadcast(type: string, data: any): void {
+    if (this.broadcastChannel) {
+      this.broadcastChannel.postMessage({ type, data });
+    }
   }
 
   public initialize(username: string, avatarUrl?: string): string {
@@ -70,14 +128,32 @@ class MatchmakingService {
       this.noUsersCallbacks.set(userId, noUsersCallback);
     }
     
+    // Broadcast matchmaking request through localStorage for same-origin tabs
     this.lastBroadcastTime = broadcastMatchmakingRequest(userId, user.username, user.avatarUrl);
+    
+    // Broadcast through BroadcastChannel for cross-domain/device communication
+    this.broadcast('matchmaking_request', {
+      userId,
+      username: user.username,
+      avatarUrl: user.avatarUrl,
+      timestamp: Date.now()
+    });
     
     this.checkForMatches(userId);
     
     this.matchCheckInterval = window.setInterval(() => {
       const now = Date.now();
       if (now - this.lastBroadcastTime > 1000) {
+        // Broadcast through localStorage
         this.lastBroadcastTime = broadcastMatchmakingRequest(userId, user.username, user.avatarUrl);
+        
+        // Broadcast through BroadcastChannel
+        this.broadcast('matchmaking_request', {
+          userId,
+          username: user.username,
+          avatarUrl: user.avatarUrl,
+          timestamp: Date.now()
+        });
       }
       
       this.checkForMatches(userId);
@@ -109,13 +185,24 @@ class MatchmakingService {
     
     this.botMatchService.clearBotMatchTimeout();
     
+    // Broadcast through localStorage
     broadcastCancellation(userId);
+    
+    // Broadcast through BroadcastChannel
+    this.broadcast('matchmaking_cancel', {
+      userId,
+      timestamp: Date.now()
+    });
   }
 
   private cleanupUser(): void {
     if (this.userId) {
       this.cancelMatchmaking(this.userId);
       this.leaveBattle(this.userId);
+      
+      if (this.broadcastChannel) {
+        this.broadcastChannel.close();
+      }
     }
   }
 
@@ -185,6 +272,13 @@ class MatchmakingService {
         const currentUserCallback = this.callbacks.get(currentUserId);
         const opponentCallback = this.callbacks.get(userId);
         
+        // Broadcast match accept
+        this.broadcast('match_accept', {
+          userId: currentUserId,
+          opponentId: userId,
+          timestamp: Date.now()
+        });
+        
         if (currentUserCallback) {
           currentUserCallback(user);
         }
@@ -208,3 +302,4 @@ class MatchmakingService {
 
 export default MatchmakingService;
 export type { User };
+
