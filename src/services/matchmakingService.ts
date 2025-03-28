@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { User, MatchmakingCallback, NoUsersCallback } from "./matchmaking/types";
 import { generateUserId, broadcastMatchmakingRequest, broadcastCancellation } from "./matchmaking/utils";
@@ -29,9 +28,7 @@ class MatchmakingService {
     return MatchmakingService.instance;
   }
 
-  // Initialize user and prepare for matchmaking
   public initialize(username: string, avatarUrl?: string): string {
-    // Generate a unique ID for this user
     const userId = generateUserId();
     this.userId = userId;
     
@@ -43,7 +40,6 @@ class MatchmakingService {
     
     console.log("Initializing user for matchmaking:", user);
     
-    // Update the storageEventService with the new userId
     if (this.storageEventService) {
       this.storageEventService.cleanup();
     }
@@ -52,14 +48,11 @@ class MatchmakingService {
     return userId;
   }
 
-  // Start looking for a match
   public findMatch(userId: string, callback: MatchmakingCallback, noUsersCallback?: NoUsersCallback): void {
     console.log(`User ${userId} is looking for a match`);
     
-    // Reset bot match settings
     this.botMatchService.resetBotMatch();
     
-    // Clean up any existing interval
     if (this.matchCheckInterval !== null) {
       clearInterval(this.matchCheckInterval);
     }
@@ -70,7 +63,6 @@ class MatchmakingService {
       avatarUrl: localStorage.getItem('avatarUrl') || undefined
     };
     
-    // Add user to waiting pool
     this.waitingUsers.set(userId, user);
     this.callbacks.set(userId, callback);
     
@@ -78,32 +70,23 @@ class MatchmakingService {
       this.noUsersCallbacks.set(userId, noUsersCallback);
     }
     
-    // Broadcast matchmaking request immediately and frequently
     this.lastBroadcastTime = broadcastMatchmakingRequest(userId, user.username, user.avatarUrl);
     
-    // Check for matches immediately
     this.checkForMatches(userId);
     
-    // Set up a regular interval to check for matches and broadcast presence
     this.matchCheckInterval = window.setInterval(() => {
-      // Broadcast presence more frequently to ensure visibility
       const now = Date.now();
-      if (now - this.lastBroadcastTime > 1000) { // Every second
+      if (now - this.lastBroadcastTime > 1000) {
         this.lastBroadcastTime = broadcastMatchmakingRequest(userId, user.username, user.avatarUrl);
       }
       
-      // Check for matches more frequently
       this.checkForMatches(userId);
-    }, 500); // Check every 500ms
+    }, 500);
     
-    // Set timeout for bot match if no users found
     this.botMatchService.setBotMatchTimeout(() => {
-      // If user is still in waiting pool after delay, check for other users
       if (this.waitingUsers.has(userId)) {
-        // Check if there are no other users available
         const otherUsers = Array.from(this.waitingUsers.keys()).filter(id => id !== userId);
         if (otherUsers.length === 0) {
-          // Notify user that no real opponents found
           const noUsersCallback = this.noUsersCallbacks.get(userId);
           if (noUsersCallback) {
             noUsersCallback();
@@ -113,7 +96,6 @@ class MatchmakingService {
     });
   }
 
-  // Cancel matchmaking
   public cancelMatchmaking(userId: string): void {
     console.log(`User ${userId} cancelled matchmaking`);
     this.waitingUsers.delete(userId);
@@ -127,11 +109,9 @@ class MatchmakingService {
     
     this.botMatchService.clearBotMatchTimeout();
     
-    // Broadcast cancellation to other users
     broadcastCancellation(userId);
   }
 
-  // Clean up user when leaving or closing tab
   private cleanupUser(): void {
     if (this.userId) {
       this.cancelMatchmaking(this.userId);
@@ -139,7 +119,6 @@ class MatchmakingService {
     }
   }
 
-  // Leave an active battle
   public leaveBattle(userId: string): void {
     const opponentId = this.activeMatches.get(userId);
     if (opponentId) {
@@ -149,7 +128,6 @@ class MatchmakingService {
     }
   }
 
-  // Set user media stream (for video/audio)
   public setUserStream(userId: string, stream: MediaStream): void {
     const user = this.waitingUsers.get(userId);
     if (user) {
@@ -158,28 +136,23 @@ class MatchmakingService {
     }
   }
 
-  // Get the current user's ID
   public getCurrentUserId(): string | null {
     return this.userId;
   }
 
-  // Match with a bot if no real users available
   public matchWithBot(userId: string): void {
     if (!this.waitingUsers.has(userId)) return;
     
     const botOpponent = this.botMatchService.createBotOpponent();
     
-    // Remove user from waiting pool
     const currentUser = this.waitingUsers.get(userId)!;
     this.waitingUsers.delete(userId);
     
-    // Notify user of the bot match
     const currentUserCallback = this.callbacks.get(userId);
     if (currentUserCallback) {
       currentUserCallback(botOpponent);
     }
     
-    // Clear any match check interval
     if (this.matchCheckInterval !== null) {
       clearInterval(this.matchCheckInterval);
       this.matchCheckInterval = null;
@@ -188,33 +161,27 @@ class MatchmakingService {
     this.botMatchService.clearBotMatchTimeout();
   }
 
-  // Check if bot matching is enabled
   public isBotMatchEnabled(): boolean {
     return this.botMatchService.isBotMatchEnabled();
   }
 
   private checkForMatches(currentUserId: string): void {
-    // Only proceed if user is still in waiting pool
     if (!this.waitingUsers.has(currentUserId)) {
       return;
     }
     
     for (const [userId, user] of this.waitingUsers.entries()) {
       if (userId !== currentUserId) {
-        // We found a match!
         console.log(`Found a match between ${currentUserId} and ${userId}`);
         
-        // Remove both users from waiting pool
         const currentUser = this.waitingUsers.get(currentUserId)!;
         
         this.waitingUsers.delete(currentUserId);
         this.waitingUsers.delete(userId);
         
-        // Add to active matches
         this.activeMatches.set(currentUserId, userId);
         this.activeMatches.set(userId, currentUserId);
         
-        // Notify both users of the match
         const currentUserCallback = this.callbacks.get(currentUserId);
         const opponentCallback = this.callbacks.get(userId);
         
@@ -226,7 +193,6 @@ class MatchmakingService {
           opponentCallback(currentUser);
         }
         
-        // Clear any match check interval
         if (this.matchCheckInterval !== null) {
           clearInterval(this.matchCheckInterval);
           this.matchCheckInterval = null;
@@ -241,4 +207,4 @@ class MatchmakingService {
 }
 
 export default MatchmakingService;
-export { User };
+export type { User };
