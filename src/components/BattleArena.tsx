@@ -7,7 +7,7 @@ import AudienceReactions from './AudienceReactions';
 import AudienceVoting from './AudienceVoting';
 import ChatPanel from './ChatPanel';
 import MiniGames from './MiniGames';
-import { MessageCircle, Settings, Clock, LogOut } from 'lucide-react';
+import { MessageCircle, Settings, Clock, LogOut, Camera, CameraOff } from 'lucide-react';
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -39,6 +39,7 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
   const [userStream, setUserStream] = useState<MediaStream | null>(null);
   const [opponentUsername, setOpponentUsername] = useState(opponentData?.username || "RoastMaster99");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [cameraToggle, setCameraToggle] = useState(true);
   
   useEffect(() => {
     if (!isDemo) {
@@ -67,6 +68,17 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
       toast.error("Please allow camera and microphone access for the full experience");
       console.error("Media permissions error:", error);
     }
+  };
+  
+  const toggleCamera = () => {
+    setCameraToggle(!cameraToggle);
+    if (userStream) {
+      const videoTracks = userStream.getVideoTracks();
+      videoTracks.forEach((track) => {
+        track.enabled = !cameraToggle;
+      });
+    }
+    toast.info(`Camera ${!cameraToggle ? 'enabled' : 'disabled'}`);
   };
   
   const handleRoundComplete = () => {
@@ -206,15 +218,26 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
                 
                 <div className="flex items-center space-x-2">
                   {!isDemo && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="text-[#FF5757] hover:bg-[#FF5757]/10 hover:text-[#FF5757] flex items-center"
-                      onClick={() => setShowLeaveDialog(true)}
-                    >
-                      <LogOut className="h-4 w-4 mr-1" />
-                      Leave
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="rounded-full hover:bg-white/10 text-white"
+                        onClick={toggleCamera}
+                      >
+                        {cameraToggle ? <Camera className="h-4 w-4" /> : <CameraOff className="h-4 w-4" />}
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-[#FF5757] hover:bg-[#FF5757]/10 hover:text-[#FF5757] flex items-center"
+                        onClick={() => setShowLeaveDialog(true)}
+                      >
+                        <LogOut className="h-4 w-4 mr-1" />
+                        Leave
+                      </Button>
+                    </>
                   )}
                   
                   {!isDemo && (
@@ -275,7 +298,7 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
                 <UserVideo 
                   username={isDemo ? "JokeSlayer42" : currentUsername} 
                   isCurrentUser={true} 
-                  videoEnabled={videoEnabled}
+                  videoEnabled={videoEnabled && cameraToggle}
                   audioEnabled={audioEnabled}
                   onLeave={() => setShowLeaveDialog(true)}
                   avatarUrl="https://randomuser.me/api/portraits/women/44.jpg"
