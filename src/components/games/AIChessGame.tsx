@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Chess, ChessSquare, Dice1, ArrowLeft } from 'lucide-react';
+import { CheckSquare, Dice, ArrowLeft } from 'lucide-react';
 import { toast } from "sonner";
 
 interface ChessPiece {
