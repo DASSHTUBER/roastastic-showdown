@@ -1,21 +1,30 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, LogIn } from 'lucide-react';
+import { toast } from 'sonner';
 
 const UsernameSetup = () => {
   const [username, setUsername] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user, setUsername: saveUsername, signInWithGoogle } = useAuth();
+  const { user, username: existingUsername, setUsername: saveUsername, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+
+  // If user already has a username, redirect to home
+  useEffect(() => {
+    if (user && existingUsername) {
+      navigate('/', { replace: true });
+    }
+  }, [user, existingUsername, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!username.trim()) {
+      toast.error('Please enter a username');
       return;
     }
     
@@ -24,7 +33,7 @@ const UsernameSetup = () => {
     setIsSubmitting(false);
     
     if (success) {
-      navigate('/');
+      navigate('/', { replace: true });
     }
   };
 
@@ -32,8 +41,10 @@ const UsernameSetup = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#8023a5] p-4">
         <div className="gartic-panel w-full max-w-md p-8 rounded-xl text-center">
-          <h1 className="text-2xl font-bold text-white mb-6">Sign In to RoastBattle</h1>
-          <p className="text-white/80 mb-8">Sign in with your Google account to start battling!</p>
+          <h1 className="text-3xl font-bold text-white mb-6">
+            Welcome to <span className="text-[#00E1A0]">RoastBattle</span>
+          </h1>
+          <p className="text-white/80 mb-8">Sign in with your Google account to start roasting!</p>
           
           <Button 
             className="gartic-accent-button w-full py-6 flex items-center justify-center gap-2"

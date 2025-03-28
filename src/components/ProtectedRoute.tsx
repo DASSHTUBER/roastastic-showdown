@@ -13,12 +13,12 @@ const ProtectedRoute = ({ children, requireUsername = true }: ProtectedRouteProp
 
   if (isLoading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center">
+      <div className="h-screen w-full flex items-center justify-center bg-[#8023a5]">
         <div className="flex flex-col items-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-white animate-pulse-soft">
+          <h1 className="text-4xl md:text-5xl font-bold text-white animate-pulse">
             Roast<span className="text-[#00E1A0]">Battle</span>
           </h1>
-          <p className="mt-4 text-white/80 animate-pulse-soft">Checking login status...</p>
+          <p className="mt-4 text-white/80">Checking login status...</p>
         </div>
       </div>
     );
