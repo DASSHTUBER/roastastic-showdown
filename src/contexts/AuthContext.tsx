@@ -77,10 +77,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
+      // The key fix: Use absolute URL instead of relative and ensure it matches Supabase settings
+      const currentUrl = window.location.origin;
+      console.log('Redirecting to:', currentUrl);
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: currentUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

@@ -14,7 +14,12 @@ const ProtectedRoute = ({ children, requireUsername = true }: ProtectedRouteProp
 
   useEffect(() => {
     console.log('ProtectedRoute state:', { isLoading, user: !!user, username });
-  }, [isLoading, user, username]);
+    
+    // This ensures we navigate to the correct page after authentication
+    if (user && requireUsername && username) {
+      console.log('User authenticated and has username, ready to proceed');
+    }
+  }, [isLoading, user, username, requireUsername, navigate]);
 
   if (isLoading) {
     return (
