@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -8,6 +9,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { User } from '@/services/matchmakingService';
 import MatchmakingService from '@/services/matchmakingService';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Battles = () => {
   const [isMatching, setIsMatching] = useState(false);
@@ -15,6 +17,7 @@ const Battles = () => {
   const [opponent, setOpponent] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
+  const { user } = useAuth();
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -37,6 +40,15 @@ const Battles = () => {
   }, [matchFound]);
   
   const checkMediaPermissions = async () => {
+    // First check if user is authenticated
+    if (!user) {
+      // Store current location in sessionStorage to redirect back after auth
+      sessionStorage.setItem('redirectAfterAuth', '/battles');
+      toast.info("Please sign in to start matchmaking");
+      navigate('/auth');
+      return;
+    }
+    
     try {
       await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       startMatchmaking();

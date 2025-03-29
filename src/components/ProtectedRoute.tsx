@@ -35,6 +35,8 @@ const ProtectedRoute = ({ children, requireUsername = true }: ProtectedRouteProp
   }
 
   if (!user) {
+    // Store current path to redirect back after authentication
+    sessionStorage.setItem('redirectAfterAuth', window.location.pathname);
     return <Navigate to="/auth" replace />;
   }
 

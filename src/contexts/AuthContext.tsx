@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
-      // The key fix: Use absolute URL instead of relative and ensure it matches Supabase settings
+      // Get the current URL as the base for redirection
       const currentUrl = window.location.origin;
       console.log('Redirecting to:', currentUrl);
       

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -8,24 +7,52 @@ import { ArrowRight, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 
 const UsernameSetup = () => {
+  const [loading, setLoading] = useState(true);
+  const [showUsernameForm, setShowUsernameForm] = useState(false);
   const [username, setUsername] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user, username: existingUsername, setUsername: saveUsername, signInWithGoogle } = useAuth();
+  const [usernameError, setUsernameError] = useState('');
+  const { isLoading, user, username: existingUsername, signInWithGoogle, setUsername: saveUsername } = useAuth();
   const navigate = useNavigate();
 
-  // If user already has a username, redirect to home
   useEffect(() => {
     console.log('UsernameSetup check:', { user: !!user, existingUsername });
-    if (user && existingUsername) {
-      navigate('/', { replace: true });
+    
+    // Check if we should redirect after auth
+    const redirectPath = sessionStorage.getItem('redirectAfterAuth');
+    
+    if (!isLoading) {
+      if (user) {
+        if (existingUsername) {
+          // User has a username, redirect them
+          if (redirectPath) {
+            sessionStorage.removeItem('redirectAfterAuth');
+            navigate(redirectPath);
+          } else {
+            navigate('/');
+          }
+        } else {
+          // User is logged in but needs a username
+          setShowUsernameForm(true);
+        }
+      }
+      
+      setLoading(false);
     }
-  }, [user, existingUsername, navigate]);
+  }, [isLoading, user, existingUsername, navigate]);
+
+  const handleGoogleSignIn = async () => {
+    await signInWithGoogle();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!username.trim()) {
-      toast.error('Please enter a username');
+      setUsernameError('Please enter a username');
+      return;
+    }
+    
+    if (usernameError) {
       return;
     }
     
@@ -49,7 +76,7 @@ const UsernameSetup = () => {
           
           <Button 
             className="gartic-accent-button w-full py-6 flex items-center justify-center gap-2"
-            onClick={signInWithGoogle}
+            onClick={handleGoogleSignIn}
           >
             <LogIn className="h-5 w-5" />
             <span>Sign In with Google</span>
@@ -78,6 +105,7 @@ const UsernameSetup = () => {
               required
             />
             <p className="text-white/60 text-sm mt-2">Username must be 3-20 characters</p>
+            {usernameError && <p className="text-red-500 text-sm mt-2">{usernameError}</p>}
           </div>
           
           <Button 

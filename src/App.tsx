@@ -28,11 +28,11 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<UsernameSetup />} />
               <Route path="/username-setup" element={<UsernameSetup />} />
-              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/battles" element={<ProtectedRoute><Battles /></ProtectedRoute>} />
-              <Route path="/minigames" element={<ProtectedRoute><MiniGames /></ProtectedRoute>} />
-              <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-              <Route path="/tournaments" element={<ProtectedRoute><Tournaments /></ProtectedRoute>} />
+              <Route path="/" element={<Index />} />
+              <Route path="/battles" element={<Battles />} />
+              <Route path="/minigames" element={<MiniGames />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/tournaments" element={<Tournaments />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
