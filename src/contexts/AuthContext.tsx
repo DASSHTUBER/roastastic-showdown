@@ -10,6 +10,8 @@ interface AuthContextType {
   username: string | null;
   isLoading: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   setUsername: (username: string) => Promise<boolean>;
 }
@@ -102,6 +104,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const signInWithEmail = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast.error(`Failed to sign in: ${error.message}`);
+        console.error('Error signing in with email:', error);
+        throw error;
+      } else {
+        toast.success('Signed in successfully');
+      }
+    } catch (error) {
+      console.error('Unexpected error during email sign-in:', error);
+      throw error;
+    }
+  };
+
+  const signUpWithEmail = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`,
+        }
+      });
+
+      if (error) {
+        toast.error(`Failed to sign up: ${error.message}`);
+        console.error('Error signing up with email:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Unexpected error during email sign-up:', error);
+      throw error;
+    }
+  };
+
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -157,6 +200,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     username,
     isLoading,
     signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
     signOut,
     setUsername,
   };
