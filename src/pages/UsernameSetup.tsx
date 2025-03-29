@@ -15,6 +15,7 @@ const UsernameSetup = () => {
 
   // If user already has a username, redirect to home
   useEffect(() => {
+    console.log('UsernameSetup check:', { user: !!user, existingUsername });
     if (user && existingUsername) {
       navigate('/', { replace: true });
     }

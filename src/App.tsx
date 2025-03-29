@@ -33,7 +33,6 @@ const App = () => (
               <Route path="/minigames" element={<ProtectedRoute><MiniGames /></ProtectedRoute>} />
               <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
               <Route path="/tournaments" element={<ProtectedRoute><Tournaments /></ProtectedRoute>} />
-              {/* Catch-all redirect to auth for any unmatched paths */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

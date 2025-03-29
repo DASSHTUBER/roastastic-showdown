@@ -1,6 +1,6 @@
 
-import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { ReactNode, useEffect } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -10,6 +10,11 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children, requireUsername = true }: ProtectedRouteProps) => {
   const { isLoading, user, username } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    console.log('ProtectedRoute state:', { isLoading, user: !!user, username });
+  }, [isLoading, user, username]);
 
   if (isLoading) {
     return (
