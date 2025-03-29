@@ -29,10 +29,38 @@ const App = () => (
               <Route path="/auth" element={<UsernameSetup />} />
               <Route path="/username-setup" element={<UsernameSetup />} />
               <Route path="/" element={<Index />} />
-              <Route path="/battles" element={<Battles />} />
-              <Route path="/minigames" element={<MiniGames />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/tournaments" element={<Tournaments />} />
+              <Route 
+                path="/battles" 
+                element={
+                  <ProtectedRoute allowAnonymous={true}>
+                    <Battles />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/minigames" 
+                element={
+                  <ProtectedRoute allowAnonymous={true}>
+                    <MiniGames />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/leaderboard" 
+                element={
+                  <ProtectedRoute allowAnonymous={true}>
+                    <Leaderboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/tournaments" 
+                element={
+                  <ProtectedRoute allowAnonymous={true}>
+                    <Tournaments />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

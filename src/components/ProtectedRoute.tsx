@@ -6,9 +6,10 @@ import { useAuth } from '@/contexts/AuthContext';
 interface ProtectedRouteProps {
   children: ReactNode;
   requireUsername?: boolean;
+  allowAnonymous?: boolean;
 }
 
-const ProtectedRoute = ({ children, requireUsername = true }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, requireUsername = true, allowAnonymous = true }: ProtectedRouteProps) => {
   const { isLoading, user, username } = useAuth();
   const navigate = useNavigate();
 
@@ -40,7 +41,10 @@ const ProtectedRoute = ({ children, requireUsername = true }: ProtectedRouteProp
     return <Navigate to="/auth" replace />;
   }
 
-  if (requireUsername && !username) {
+  const isAnonymous = user.app_metadata.provider === 'anonymous';
+  
+  // If the user is anonymous and we allow anonymous users, we don't require a username
+  if (requireUsername && !username && !(allowAnonymous && isAnonymous)) {
     return <Navigate to="/username-setup" replace />;
   }
 

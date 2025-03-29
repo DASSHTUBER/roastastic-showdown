@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +11,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string) => Promise<void>;
+  signInAnonymously: () => Promise<void>;
   signOut: () => Promise<void>;
   setUsername: (username: string) => Promise<boolean>;
 }
@@ -79,7 +79,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
-      // Get the current URL as the base for redirection
       const currentUrl = window.location.origin;
       console.log('Redirecting to:', currentUrl);
       
@@ -145,6 +144,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const signInAnonymously = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.auth.signInAnonymously();
+      
+      if (error) {
+        toast.error(`Failed to sign in anonymously: ${error.message}`);
+        console.error('Error signing in anonymously:', error);
+      } else {
+        toast.success('Signed in anonymously');
+        
+        const randomUsername = `Guest_${Math.floor(Math.random() * 10000)}`;
+        if (data.user) {
+          await setUsername(randomUsername);
+        }
+      }
+    } catch (error) {
+      toast.error(`An unexpected error occurred`);
+      console.error('Unexpected error during anonymous sign-in:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -202,6 +225,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,
+    signInAnonymously,
     signOut,
     setUsername,
   };

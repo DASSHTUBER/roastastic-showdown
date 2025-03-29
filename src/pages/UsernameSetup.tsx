@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, LogIn, Mail } from 'lucide-react';
+import { ArrowRight, LogIn, Mail, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,7 @@ const UsernameSetup = () => {
   const [showUsernameForm, setShowUsernameForm] = useState(false);
   const [username, setUsername] = useState('');
   const [usernameError, setUsernameError] = useState('');
-  const { isLoading, user, username: existingUsername, signInWithGoogle, setUsername: saveUsername, signInWithEmail, signUpWithEmail } = useAuth();
+  const { isLoading, user, username: existingUsername, signInWithGoogle, setUsername: saveUsername, signInWithEmail, signUpWithEmail, signInAnonymously } = useAuth();
   const navigate = useNavigate();
 
   // Email auth states
@@ -52,6 +52,18 @@ const UsernameSetup = () => {
 
   const handleGoogleSignIn = async () => {
     await signInWithGoogle();
+  };
+
+  const handleAnonymousSignIn = async () => {
+    setIsSubmitting(true);
+    try {
+      await signInAnonymously();
+    } catch (error) {
+      console.error('Anonymous sign in error:', error);
+      toast.error('Failed to sign in anonymously.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
@@ -227,14 +239,25 @@ const UsernameSetup = () => {
             </div>
           </div>
           
-          <Button 
-            className="gartic-button w-full py-6 flex items-center justify-center gap-2"
-            onClick={handleGoogleSignIn}
-            disabled={isSubmitting}
-          >
-            <LogIn className="h-5 w-5" />
-            <span>Sign In with Google</span>
-          </Button>
+          <div className="space-y-4">
+            <Button 
+              className="gartic-button w-full py-6 flex items-center justify-center gap-2"
+              onClick={handleGoogleSignIn}
+              disabled={isSubmitting}
+            >
+              <LogIn className="h-5 w-5" />
+              <span>Sign In with Google</span>
+            </Button>
+            
+            <Button 
+              className="gartic-button w-full py-6 flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600"
+              onClick={handleAnonymousSignIn}
+              disabled={isSubmitting}
+            >
+              <UserRound className="h-5 w-5" />
+              <span>Continue Anonymously</span>
+            </Button>
+          </div>
         </div>
       </div>
     );
