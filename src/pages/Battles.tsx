@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -17,7 +16,7 @@ const Battles = () => {
   const [opponent, setOpponent] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showPermissionDialog, setShowPermissionDialog] = useState(false);
-  const { user } = useAuth();
+  const { user, signInAnonymously } = useAuth();
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -40,13 +39,17 @@ const Battles = () => {
   }, [matchFound]);
   
   const checkMediaPermissions = async () => {
-    // First check if user is authenticated
+    // First ensure a user is authenticated (either regular or anonymous)
     if (!user) {
-      // Store current location in sessionStorage to redirect back after auth
-      sessionStorage.setItem('redirectAfterAuth', '/battles');
-      toast.info("Please sign in to start matchmaking");
-      navigate('/auth');
-      return;
+      try {
+        // Try to sign in anonymously
+        await signInAnonymously();
+        toast.success("Signed in anonymously for matchmaking");
+      } catch (error) {
+        console.error("Error signing in anonymously:", error);
+        toast.error("Failed to create a temporary profile. Please try again.");
+        return;
+      }
     }
     
     try {
@@ -54,7 +57,9 @@ const Battles = () => {
       startMatchmaking();
     } catch (error) {
       console.error("Media permissions error:", error);
-      setShowPermissionDialog(true);
+      // We'll still allow matchmaking, but inform the user
+      toast.warning("Camera/mic not available. You can still match but won't be seen/heard.");
+      startMatchmaking();
     }
   };
   
@@ -82,6 +87,11 @@ const Battles = () => {
     if (userId) {
       matchmakingService.leaveBattle(userId);
     }
+    
+    // Reset state
+    setMatchFound(false);
+    setIsMatching(false);
+    setOpponent(null);
     
     // Navigate immediately
     navigate('/', { replace: true });

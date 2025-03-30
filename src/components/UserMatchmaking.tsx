@@ -20,6 +20,7 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
   const [matchmakingState, setMatchmakingState] = useState<'searching' | 'no-users' | 'connecting'>('searching');
   const [showBotOption, setShowBotOption] = useState(false);
   const [cameraEnabled, setCameraEnabled] = useState(true);
+  const [connectionAttempts, setConnectionAttempts] = useState(0);
   const userIdRef = useRef<string | null>(null);
   const matchmakingService = RealTimeMatchmakingService.getInstance();
   
@@ -73,12 +74,18 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
       setCameraEnabled(true);
       
       // Get user media
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true, 
-        audio: true 
-      });
-      
-      setUserStream(stream);
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: true, 
+          audio: true 
+        });
+        setUserStream(stream);
+      } catch (mediaError) {
+        console.error("Media access error:", mediaError);
+        toast.error("Could not access camera or microphone. Continuing without media.");
+        // Continue without media - users can still match without camera/mic
+      }
       
       // Generate username or use from localStorage if available
       const username = localStorage.getItem('username') || `RoastMaster${Math.floor(Math.random() * 999)}`;
@@ -90,8 +97,10 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
       const userId = matchmakingService.initialize(username, avatarUrl || undefined);
       userIdRef.current = userId;
       
-      // Set user stream
-      matchmakingService.setUserStream(userId, stream);
+      // Set user stream if available
+      if (stream) {
+        matchmakingService.setUserStream(userId, stream);
+      }
       
       // Start looking for a match
       matchmakingService.findMatch(
@@ -114,9 +123,12 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
       );
       
       console.log("Matchmaking initialized for user:", userId);
+      setConnectionAttempts(prev => prev + 1);
     } catch (error) {
       console.error("Error initializing matchmaking:", error);
-      toast.error("Failed to access camera or microphone. Please check permissions.");
+      toast.error("Failed to connect to matchmaking service. Please try again.");
+      setMatchmakingState('no-users');
+      setShowNoUsersMessage(true);
     }
   };
   
@@ -233,6 +245,11 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
               
               <p className="text-sm text-roast-light-gray mb-6">
                 Looking for another user who's ready to get roasted...
+                {connectionAttempts > 1 && (
+                  <span className="block mt-2 text-xs">
+                    Connection attempt #{connectionAttempts}. Make sure you have another device connected.
+                  </span>
+                )}
               </p>
               
               {showBotOption && matchmakingState === 'searching' && (
@@ -259,6 +276,7 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
                   onClick={toggleCamera}
                   variant="outline" 
                   className="rounded-full px-4"
+                  disabled={!userStream}
                 >
                   {cameraEnabled ? <CameraOff className="mr-2 h-4 w-4" /> : <Camera className="mr-2 h-4 w-4" />}
                   {cameraEnabled ? 'Disable Camera' : 'Enable Camera'}
