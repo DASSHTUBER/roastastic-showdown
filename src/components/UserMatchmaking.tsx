@@ -84,6 +84,8 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
       const username = localStorage.getItem('username') || `RoastMaster${Math.floor(Math.random() * 999)}`;
       const avatarUrl = localStorage.getItem('avatarUrl');
       
+      console.log("Initializing matchmaking with username:", username);
+      
       // Initialize user in matchmaking service
       const userId = matchmakingService.initialize(username, avatarUrl || undefined);
       userIdRef.current = userId;
@@ -107,6 +109,7 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
           // Called when no users are available after waiting
           setMatchmakingState('no-users');
           setShowNoUsersMessage(true);
+          toast.info("No opponents found at this time. Try again later or play with a bot.");
         }
       );
       

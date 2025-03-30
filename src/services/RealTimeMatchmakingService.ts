@@ -90,82 +90,103 @@ class RealTimeMatchmakingService {
       supabase.removeChannel(this.channel);
     }
 
-    // Create a new channel for matchmaking
-    this.channel = supabase.channel('matchmaking', {
-      config: {
-        presence: {
-          key: userId,
+    try {
+      // Create a new channel for matchmaking with a unique name
+      const channelName = 'matchmaking_' + Date.now().toString();
+      console.log(`Creating channel: ${channelName}`);
+      
+      this.channel = supabase.channel(channelName, {
+        config: {
+          presence: {
+            key: userId,
+          },
         },
-      },
-    });
-
-    // Setup presence handlers
-    this.channel
-      .on('presence', { event: 'sync' }, () => {
-        console.log('Presence sync event received');
-        const state = this.channel.presenceState();
-        console.log('Current presence state:', state);
-        
-        // Update waitingUsers based on presence state
-        this.updateWaitingUsers(state);
-      })
-      .on('presence', { event: 'join' }, ({ key, newPresences }: { key: string, newPresences: any[] }) => {
-        console.log('User joined:', key, newPresences);
-        
-        if (key !== userId) {
-          // Add this user to our waiting pool if they're not already there
-          const otherUser = newPresences[0];
-          if (otherUser && !this.waitingUsers.has(key)) {
-            const user: User = {
-              id: key,
-              username: otherUser.username || `User_${key.slice(0, 4)}`,
-              avatarUrl: otherUser.avatarUrl
-            };
-            this.waitingUsers.set(key, user);
-          }
-        }
-      })
-      .on('presence', { event: 'leave' }, ({ key, leftPresences }: { key: string, leftPresences: any[] }) => {
-        console.log('User left:', key, leftPresences);
-        
-        if (key !== userId) {
-          // Remove this user from our waiting pool
-          this.waitingUsers.delete(key);
-        }
-      })
-      .on('broadcast', { event: 'match_accept' }, (payload) => {
-        console.log('Match accept broadcast received:', payload);
-        const { senderId, targetId } = payload;
-        
-        if (targetId === userId) {
-          // Someone wants to match with us
-          const sender = this.waitingUsers.get(senderId);
-          if (sender) {
-            this.acceptMatch(userId, senderId);
-          }
-        }
       });
 
-    // Subscribe to the channel
-    this.channel.subscribe(async (status: string) => {
-      if (status === 'SUBSCRIBED') {
-        // Track our presence once subscribed
-        await this.channel.track({
-          userId: userId,
-          username: user.username,
-          avatarUrl: user.avatarUrl,
-          looking: true,
-          joinedAt: new Date().toISOString()
+      // Setup presence handlers
+      this.channel
+        .on('presence', { event: 'sync' }, () => {
+          console.log('Presence sync event received');
+          const state = this.channel.presenceState();
+          console.log('Current presence state:', state);
+          
+          // Update waitingUsers based on presence state
+          this.updateWaitingUsers(state);
+        })
+        .on('presence', { event: 'join' }, ({ key, newPresences }: { key: string, newPresences: any[] }) => {
+          console.log('User joined:', key, newPresences);
+          
+          if (key !== userId) {
+            // Add this user to our waiting pool if they're not already there
+            const otherUser = newPresences[0];
+            if (otherUser && !this.waitingUsers.has(key)) {
+              const user: User = {
+                id: key,
+                username: otherUser.username || `User_${key.slice(0, 4)}`,
+                avatarUrl: otherUser.avatarUrl
+              };
+              this.waitingUsers.set(key, user);
+            }
+          }
+        })
+        .on('presence', { event: 'leave' }, ({ key, leftPresences }: { key: string, leftPresences: any[] }) => {
+          console.log('User left:', key, leftPresences);
+          
+          if (key !== userId) {
+            // Remove this user from our waiting pool
+            this.waitingUsers.delete(key);
+          }
+        })
+        .on('broadcast', { event: 'match_accept' }, (payload) => {
+          console.log('Match accept broadcast received:', payload);
+          const { senderId, targetId } = payload;
+          
+          if (targetId === userId) {
+            // Someone wants to match with us
+            const sender = this.waitingUsers.get(senderId);
+            if (sender) {
+              this.acceptMatch(userId, senderId);
+            }
+          }
         });
-        console.log('Successfully joined matchmaking channel');
-      } else {
-        console.log('Matchmaking channel subscription status:', status);
-      }
-    });
+
+      // Subscribe to the channel with error handling
+      this.channel.subscribe(async (status: string, err?: any) => {
+        if (err) {
+          console.error('Channel subscription error:', err);
+          toast.error("Failed to connect to matchmaking service");
+          return;
+        }
+        
+        if (status === 'SUBSCRIBED') {
+          // Track our presence once subscribed
+          try {
+            await this.channel.track({
+              userId: userId,
+              username: user.username,
+              avatarUrl: user.avatarUrl,
+              looking: true,
+              joinedAt: new Date().toISOString()
+            });
+            console.log('Successfully joined matchmaking channel');
+            toast.success("Connected to matchmaking service");
+          } catch (trackError) {
+            console.error('Error tracking presence:', trackError);
+            toast.error("Failed to register in matchmaking");
+          }
+        } else {
+          console.log('Matchmaking channel subscription status:', status);
+        }
+      });
+    } catch (error) {
+      console.error('Error setting up realtime channel:', error);
+      toast.error("Failed to connect to matchmaking service");
+    }
   }
 
   private updateWaitingUsers(state: Record<string, any[]>): void {
     // Reset waiting users based on current presence state
+    const previousUsers = new Map(this.waitingUsers);
     this.waitingUsers.clear();
     
     // Add all users from presence state
@@ -190,6 +211,8 @@ class RealTimeMatchmakingService {
       };
       this.waitingUsers.set(this.userId, user);
     }
+    
+    console.log("Updated waiting users:", Array.from(this.waitingUsers.keys()));
   }
 
   public cancelMatchmaking(userId: string): void {
@@ -207,8 +230,12 @@ class RealTimeMatchmakingService {
     
     // Clean up Supabase Realtime channel
     if (this.channel) {
-      this.channel.untrack();
-      supabase.removeChannel(this.channel);
+      try {
+        this.channel.untrack();
+        supabase.removeChannel(this.channel);
+      } catch (error) {
+        console.error('Error removing channel:', error);
+      }
       this.channel = null;
     }
   }
@@ -223,8 +250,12 @@ class RealTimeMatchmakingService {
     
     // Clean up Supabase Realtime channel
     if (this.channel) {
-      this.channel.untrack();
-      supabase.removeChannel(this.channel);
+      try {
+        this.channel.untrack();
+        supabase.removeChannel(this.channel);
+      } catch (error) {
+        console.error('Error removing channel:', error);
+      }
       this.channel = null;
     }
   }
@@ -263,8 +294,12 @@ class RealTimeMatchmakingService {
     
     // Clean up Supabase Realtime channel
     if (this.channel) {
-      this.channel.untrack();
-      supabase.removeChannel(this.channel);
+      try {
+        this.channel.untrack();
+        supabase.removeChannel(this.channel);
+      } catch (error) {
+        console.error('Error removing channel:', error);
+      }
       this.channel = null;
     }
   }
@@ -283,14 +318,21 @@ class RealTimeMatchmakingService {
         console.log(`Found a potential match between ${currentUserId} and ${userId}`);
         
         // Initiate match with this user
-        this.channel.send({
-          type: 'broadcast',
-          event: 'match_accept',
-          payload: {
-            senderId: currentUserId,
-            targetId: userId
+        if (this.channel) {
+          try {
+            this.channel.send({
+              type: 'broadcast',
+              event: 'match_accept',
+              payload: {
+                senderId: currentUserId,
+                targetId: userId
+              }
+            });
+            console.log(`Match request sent to ${userId}`);
+          } catch (error) {
+            console.error('Error sending match request:', error);
           }
-        });
+        }
         
         // Break after finding one potential match
         break;
