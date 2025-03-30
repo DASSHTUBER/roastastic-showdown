@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -20,12 +21,14 @@ const Battles = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
+    console.log("[Battles] Component mounted");
     // Simulate page loading
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1000);
     
     return () => {
+      console.log("[Battles] Component unmounting, cleaning up resources");
       clearTimeout(timer);
       // Clean up any active matchmaking on unmount
       if (!matchFound) {
@@ -39,24 +42,29 @@ const Battles = () => {
   }, [matchFound]);
   
   const checkMediaPermissions = async () => {
+    console.log("[Battles] Checking media permissions and authentication");
     // First ensure a user is authenticated (either regular or anonymous)
     if (!user) {
       try {
+        console.log("[Battles] No user found, signing in anonymously");
         // Try to sign in anonymously
         await signInAnonymously();
         toast.success("Signed in anonymously for matchmaking");
       } catch (error) {
-        console.error("Error signing in anonymously:", error);
+        console.error("[Battles] Error signing in anonymously:", error);
         toast.error("Failed to create a temporary profile. Please try again.");
         return;
       }
+    } else {
+      console.log("[Battles] User already authenticated:", user);
     }
     
     try {
+      console.log("[Battles] Requesting media permissions");
       await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       startMatchmaking();
     } catch (error) {
-      console.error("Media permissions error:", error);
+      console.error("[Battles] Media permissions error:", error);
       // We'll still allow matchmaking, but inform the user
       toast.warning("Camera/mic not available. You can still match but won't be seen/heard.");
       startMatchmaking();
@@ -64,16 +72,19 @@ const Battles = () => {
   };
   
   const startMatchmaking = () => {
+    console.log("[Battles] Starting matchmaking");
     setIsMatching(true);
     toast.info("Looking for a real opponent...");
   };
   
   const cancelMatchmaking = () => {
+    console.log("[Battles] Cancelling matchmaking");
     setIsMatching(false);
     toast.info("Matchmaking cancelled");
   };
   
   const handleMatchFound = (foundOpponent: User) => {
+    console.log("[Battles] Match found with opponent:", foundOpponent);
     setOpponent(foundOpponent);
     setMatchFound(true);
     toast.success(`Opponent found: ${foundOpponent.username}! Get ready to roast!`);
@@ -81,6 +92,7 @@ const Battles = () => {
   
   // Force immediate navigation when leaving battle
   const handleLeaveBattle = () => {
+    console.log("[Battles] Leaving battle");
     // Clean up any active matchmaking
     const matchmakingService = RealTimeMatchmakingService.getInstance();
     const userId = matchmakingService.getCurrentUserId();

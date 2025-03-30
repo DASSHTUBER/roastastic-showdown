@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import UserVideo from './UserVideo';
-import { X, RefreshCw, User, Camera, CameraOff } from 'lucide-react';
+import { X, RefreshCw, User, Camera, CameraOff, Wifi, WifiOff } from 'lucide-react';
 import { toast } from "sonner";
 import { User as MatchmakingUser } from '@/services/matchmakingService';
 import RealTimeMatchmakingService from '@/services/RealTimeMatchmakingService';
@@ -21,10 +21,15 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
   const [showBotOption, setShowBotOption] = useState(false);
   const [cameraEnabled, setCameraEnabled] = useState(true);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const userIdRef = useRef<string | null>(null);
   const matchmakingService = RealTimeMatchmakingService.getInstance();
   
   useEffect(() => {
+    // Enable debug mode
+    matchmakingService.setDebugMode(true);
+    console.log("[UserMatchmaking] Component mounted");
+    
     // Start matchmaking when component mounts
     initializeMatchmaking();
     
@@ -40,6 +45,7 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
     }, 1000);
     
     return () => {
+      console.log("[UserMatchmaking] Component unmounting, cleaning up resources");
       clearInterval(interval);
       // Cancel matchmaking when component unmounts
       if (userIdRef.current) {
@@ -72,6 +78,8 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
       setMatchmakingState('searching');
       setShowBotOption(false);
       setCameraEnabled(true);
+      setConnectionStatus('connecting');
+      console.log("[UserMatchmaking] Initializing matchmaking");
       
       // Get user media
       let stream;
@@ -81,8 +89,9 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
           audio: true 
         });
         setUserStream(stream);
+        console.log("[UserMatchmaking] Media stream acquired successfully");
       } catch (mediaError) {
-        console.error("Media access error:", mediaError);
+        console.error("[UserMatchmaking] Media access error:", mediaError);
         toast.error("Could not access camera or microphone. Continuing without media.");
         // Continue without media - users can still match without camera/mic
       }
@@ -91,7 +100,7 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
       const username = localStorage.getItem('username') || `RoastMaster${Math.floor(Math.random() * 999)}`;
       const avatarUrl = localStorage.getItem('avatarUrl');
       
-      console.log("Initializing matchmaking with username:", username);
+      console.log("[UserMatchmaking] Initializing matchmaking with username:", username);
       
       // Initialize user in matchmaking service
       const userId = matchmakingService.initialize(username, avatarUrl || undefined);
@@ -122,17 +131,20 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
         }
       );
       
-      console.log("Matchmaking initialized for user:", userId);
+      console.log("[UserMatchmaking] Matchmaking initialized for user:", userId);
+      setConnectionStatus('connected');
       setConnectionAttempts(prev => prev + 1);
     } catch (error) {
-      console.error("Error initializing matchmaking:", error);
+      console.error("[UserMatchmaking] Error initializing matchmaking:", error);
       toast.error("Failed to connect to matchmaking service. Please try again.");
       setMatchmakingState('no-users');
       setShowNoUsersMessage(true);
+      setConnectionStatus('error');
     }
   };
   
   const handleCancelMatchmaking = () => {
+    console.log("[UserMatchmaking] Cancelling matchmaking");
     if (userIdRef.current) {
       matchmakingService.cancelMatchmaking(userIdRef.current);
     }
@@ -146,6 +158,7 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
   };
 
   const handleConnectWithBot = () => {
+    console.log("[UserMatchmaking] Connecting with bot");
     if (userIdRef.current) {
       setMatchmakingState('connecting');
       matchmakingService.matchWithBot(userIdRef.current);
@@ -233,6 +246,22 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
               <div className="flex items-center justify-center gap-3 mb-2">
                 <span className="animate-pulse h-3 w-3 bg-roast-red rounded-full"></span>
                 <h3 className="text-xl font-semibold text-white">Finding a real opponent</h3>
+              </div>
+              
+              <div className="flex items-center justify-center mb-2">
+                {connectionStatus === 'connected' ? (
+                  <div className="flex items-center text-sm text-[#00E1A0]">
+                    <Wifi className="h-4 w-4 mr-1" /> Connected to matchmaking service
+                  </div>
+                ) : connectionStatus === 'connecting' ? (
+                  <div className="flex items-center text-sm text-amber-400">
+                    <Wifi className="h-4 w-4 mr-1 animate-pulse" /> Connecting to matchmaking service...
+                  </div>
+                ) : (
+                  <div className="flex items-center text-sm text-red-400">
+                    <WifiOff className="h-4 w-4 mr-1" /> Connection issues
+                  </div>
+                )}
               </div>
               
               <p className="text-roast-light-gray mb-6">
