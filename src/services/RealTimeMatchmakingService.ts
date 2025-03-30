@@ -208,7 +208,7 @@ class RealTimeMatchmakingService {
         if (status === 'SUBSCRIBED') {
           // Track our presence once subscribed
           try {
-            // Here's the fix - we need to pass an object to track, not multiple arguments
+            // Fix: use a single object parameter for track() instead of multiple arguments
             await this.channel.track({
               userId: userId,
               username: user.username,
@@ -245,7 +245,7 @@ class RealTimeMatchmakingService {
     const now = Date.now();
     if (now - this.lastPresenceUpdate > 5000) {
       try {
-        // Here's the second fix - use an object for track method
+        // Fix: use a single object parameter for track() instead of multiple arguments
         this.channel.track({
           userId: userId,
           username: user.username,
