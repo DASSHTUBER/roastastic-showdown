@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import UserVideo from './UserVideo';
 import { X, RefreshCw, User, Camera, CameraOff } from 'lucide-react';
 import { toast } from "sonner";
-import MatchmakingService, { User as MatchmakingUser } from '@/services/matchmakingService';
+import { User as MatchmakingUser } from '@/services/matchmakingService';
+import RealTimeMatchmakingService from '@/services/RealTimeMatchmakingService';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface UserMatchmakingProps {
@@ -20,7 +21,7 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
   const [showBotOption, setShowBotOption] = useState(false);
   const [cameraEnabled, setCameraEnabled] = useState(true);
   const userIdRef = useRef<string | null>(null);
-  const matchmakingService = MatchmakingService.getInstance();
+  const matchmakingService = RealTimeMatchmakingService.getInstance();
   
   useEffect(() => {
     // Start matchmaking when component mounts
@@ -81,9 +82,10 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
       
       // Generate username or use from localStorage if available
       const username = localStorage.getItem('username') || `RoastMaster${Math.floor(Math.random() * 999)}`;
+      const avatarUrl = localStorage.getItem('avatarUrl');
       
       // Initialize user in matchmaking service
-      const userId = matchmakingService.initialize(username);
+      const userId = matchmakingService.initialize(username, avatarUrl || undefined);
       userIdRef.current = userId;
       
       // Set user stream
@@ -276,4 +278,3 @@ const UserMatchmaking = ({ onCancel, onMatchFound }: UserMatchmakingProps) => {
 };
 
 export default UserMatchmaking;
-

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { User } from '@/services/matchmakingService';
-import MatchmakingService from '@/services/matchmakingService';
+import RealTimeMatchmakingService from '@/services/RealTimeMatchmakingService';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Battles = () => {
@@ -77,7 +77,7 @@ const Battles = () => {
   // Force immediate navigation when leaving battle
   const handleLeaveBattle = () => {
     // Clean up any active matchmaking
-    const matchmakingService = MatchmakingService.getInstance();
+    const matchmakingService = RealTimeMatchmakingService.getInstance();
     const userId = matchmakingService.getCurrentUserId();
     if (userId) {
       matchmakingService.leaveBattle(userId);
