@@ -30,7 +30,7 @@ const Battles = () => {
       clearTimeout(timer);
       // Clean up any active matchmaking on unmount
       if (!matchFound) {
-        const matchmakingService = MatchmakingService.getInstance();
+        const matchmakingService = RealTimeMatchmakingService.getInstance();
         const userId = matchmakingService.getCurrentUserId();
         if (userId) {
           matchmakingService.cancelMatchmaking(userId);
