@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { User, MatchmakingCallback, NoUsersCallback } from "./matchmaking/types";
 import { generateUserId } from "./matchmaking/utils";
@@ -209,6 +208,7 @@ class RealTimeMatchmakingService {
         if (status === 'SUBSCRIBED') {
           // Track our presence once subscribed
           try {
+            // Here's the fix - we need to pass an object to track, not multiple arguments
             await this.channel.track({
               userId: userId,
               username: user.username,
@@ -245,6 +245,7 @@ class RealTimeMatchmakingService {
     const now = Date.now();
     if (now - this.lastPresenceUpdate > 5000) {
       try {
+        // Here's the second fix - use an object for track method
         this.channel.track({
           userId: userId,
           username: user.username,
