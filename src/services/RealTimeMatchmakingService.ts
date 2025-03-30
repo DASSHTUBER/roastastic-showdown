@@ -1,8 +1,12 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { User, MatchmakingCallback, NoUsersCallback } from "./matchmaking/types";
 import { generateUserId } from "./matchmaking/utils";
 import { BotMatchService } from "./matchmaking/BotMatchService";
 import { toast } from "sonner";
+import { ChannelManager } from "./matchmaking/ChannelManager";
+import { PresenceHandler } from "./matchmaking/PresenceHandler";
+import { DebugLogger } from "./matchmaking/DebugLogger";
 
 class RealTimeMatchmakingService {
   private static instance: RealTimeMatchmakingService;
@@ -14,17 +18,17 @@ class RealTimeMatchmakingService {
   private username: string = "";
   private avatarUrl?: string;
   private botMatchService: BotMatchService;
-  private channel: any = null;
   private checkInterval: number | null = null;
-  private channelName: string = 'public-matchmaking';
-  private lastPresenceUpdate: number = 0;
-  private debugMode: boolean = true; // Enable debug mode by default
-  private connectionRetries: number = 0;
-  private maxRetries: number = 3;
+  private channelManager: ChannelManager;
+  private presenceHandler: PresenceHandler;
+  private logger: DebugLogger;
 
   private constructor() {
     this.botMatchService = new BotMatchService();
-    this.logDebug('Matchmaking service initialized');
+    this.logger = new DebugLogger(true);
+    this.channelManager = new ChannelManager(this.logger);
+    this.presenceHandler = new PresenceHandler(this.logger);
+    this.logger.log('Matchmaking service initialized');
   }
 
   static getInstance(): RealTimeMatchmakingService {
@@ -34,18 +38,8 @@ class RealTimeMatchmakingService {
     return RealTimeMatchmakingService.instance;
   }
 
-  private logDebug(message: string, data?: any): void {
-    if (this.debugMode) {
-      if (data) {
-        console.log(`[Matchmaking] ${message}`, data);
-      } else {
-        console.log(`[Matchmaking] ${message}`);
-      }
-    }
-  }
-
   public setDebugMode(enabled: boolean): void {
-    this.debugMode = enabled;
+    this.logger.setDebugMode(enabled);
   }
 
   public initialize(username: string, avatarUrl?: string): string {
@@ -54,13 +48,13 @@ class RealTimeMatchmakingService {
     this.username = username;
     this.avatarUrl = avatarUrl;
     
-    this.logDebug("Initializing user for matchmaking:", { userId, username, avatarUrl });
+    this.logger.log("Initializing user for matchmaking:", { userId, username, avatarUrl });
     
     return userId;
   }
 
   public findMatch(userId: string, callback: MatchmakingCallback, noUsersCallback?: NoUsersCallback): void {
-    this.logDebug(`User ${userId} is looking for a match`);
+    this.logger.log(`User ${userId} is looking for a match`);
     
     this.botMatchService.resetBotMatch();
     
@@ -82,26 +76,37 @@ class RealTimeMatchmakingService {
     }
     
     // Set up Supabase Realtime channel for matchmaking
-    this.setupRealtimeChannel(userId, user);
+    this.channelManager.setupRealtimeChannel(
+      userId, 
+      user, 
+      (state) => this.updateWaitingUsers(state),
+      (key, newPresences) => this.handleUserJoin(key, newPresences, userId),
+      (key) => this.handleUserLeave(key),
+      (payload) => this.handleMatchAccept(payload, userId)
+    );
     
     // Set an interval to check for matchmaking timeouts and refresh presence
     this.checkInterval = window.setInterval(() => {
-      this.refreshPresence(userId, user);
+      this.presenceHandler.refreshPresence(
+        this.channelManager.getChannel(),
+        userId,
+        user
+      );
       this.checkForMatches(userId);
       
       // Log current waiting users for debugging
-      this.logDebug("Current waiting users:", Array.from(this.waitingUsers.keys()));
+      this.logger.log("Current waiting users:", Array.from(this.waitingUsers.keys()));
     }, 3000); // Check more frequently
     
     // Set bot match timeout
     this.botMatchService.setBotMatchTimeout(() => {
       if (this.waitingUsers.has(userId)) {
         const otherUsers = Array.from(this.waitingUsers.keys()).filter(id => id !== userId);
-        this.logDebug("Current waiting users when checking for bot match:", otherUsers);
+        this.logger.log("Current waiting users when checking for bot match:", otherUsers);
         if (otherUsers.length === 0) {
           const noUsersCallback = this.noUsersCallbacks.get(userId);
           if (noUsersCallback) {
-            this.logDebug("No other users found, triggering noUsersCallback");
+            this.logger.log("No other users found, triggering noUsersCallback");
             noUsersCallback();
           }
         }
@@ -109,160 +114,55 @@ class RealTimeMatchmakingService {
     });
   }
 
-  private setupRealtimeChannel(userId: string, user: User): void {
-    // First, clean up any existing channel
-    if (this.channel) {
-      try {
-        this.channel.untrack();
-        supabase.removeChannel(this.channel);
-      } catch (error) {
-        console.error('Error removing existing channel:', error);
+  private handleUserJoin(key: string, newPresences: any[], currentUserId: string): void {
+    this.logger.log('User joined:', key, newPresences);
+    
+    if (key !== currentUserId) {
+      // Add this user to our waiting pool if they're not already there
+      const otherUser = newPresences[0];
+      if (otherUser && !this.waitingUsers.has(key)) {
+        const user: User = {
+          id: key,
+          username: otherUser.username || `User_${key.slice(0, 4)}`,
+          avatarUrl: otherUser.avatarUrl
+        };
+        this.waitingUsers.set(key, user);
+        this.logger.log(`Added user ${key} to waiting pool, current pool:`, Array.from(this.waitingUsers.keys()));
+        
+        // Check for matches immediately when a new user joins
+        if (this.userId) {
+          this.checkForMatches(this.userId);
+        }
       }
     }
+  }
 
-    try {
-      this.connectionRetries = 0;
-      this.setupChannelWithRetry(userId, user);
-    } catch (error) {
-      console.error('Error setting up realtime channel:', error);
-      toast.error("Failed to connect to matchmaking service");
+  private handleUserLeave(key: string): void {
+    this.logger.log('User left:', key);
+    
+    if (key !== this.userId) {
+      // Remove this user from our waiting pool
+      this.waitingUsers.delete(key);
+      this.logger.log(`Removed user ${key} from waiting pool, current pool:`, Array.from(this.waitingUsers.keys()));
     }
   }
 
-  private setupChannelWithRetry(userId: string, user: User): void {
-    if (this.connectionRetries >= this.maxRetries) {
-      toast.error("Failed to connect to matchmaking service after multiple attempts");
-      return;
-    }
-
-    this.connectionRetries++;
-
-    // Use a consistent channel name for all matchmaking users
-    this.logDebug(`Creating/joining channel: ${this.channelName} (Attempt ${this.connectionRetries})`);
+  private handleMatchAccept(payload: any, currentUserId: string): void {
+    this.logger.log('Match accept broadcast received:', payload);
+    const { senderId, targetId } = payload;
     
-    try {
-      this.channel = supabase.channel(this.channelName, {
-        config: {
-          presence: {
-            key: userId,
-          },
-        },
-      });
-
-      // Setup presence handlers
-      this.channel
-        .on('presence', { event: 'sync' }, () => {
-          this.logDebug('Presence sync event received');
-          const state = this.channel.presenceState();
-          this.logDebug('Current presence state:', state);
-          
-          // Update waitingUsers based on presence state
-          this.updateWaitingUsers(state);
-        })
-        .on('presence', { event: 'join' }, ({ key, newPresences }: { key: string, newPresences: any[] }) => {
-          this.logDebug('User joined:', key, newPresences);
-          
-          if (key !== userId) {
-            // Add this user to our waiting pool if they're not already there
-            const otherUser = newPresences[0];
-            if (otherUser && !this.waitingUsers.has(key)) {
-              const user: User = {
-                id: key,
-                username: otherUser.username || `User_${key.slice(0, 4)}`,
-                avatarUrl: otherUser.avatarUrl
-              };
-              this.waitingUsers.set(key, user);
-              this.logDebug(`Added user ${key} to waiting pool, current pool:`, Array.from(this.waitingUsers.keys()));
-              
-              // Check for matches immediately when a new user joins
-              if (this.userId) {
-                this.checkForMatches(this.userId);
-              }
-            }
-          }
-        })
-        .on('presence', { event: 'leave' }, ({ key, leftPresences }: { key: string, leftPresences: any[] }) => {
-          this.logDebug('User left:', key, leftPresences);
-          
-          if (key !== userId) {
-            // Remove this user from our waiting pool
-            this.waitingUsers.delete(key);
-            this.logDebug(`Removed user ${key} from waiting pool, current pool:`, Array.from(this.waitingUsers.keys()));
-          }
-        })
-        .on('broadcast', { event: 'match_accept' }, (payload) => {
-          this.logDebug('Match accept broadcast received:', payload);
-          const { senderId, targetId } = payload;
-          
-          if (targetId === userId) {
-            // Someone wants to match with us
-            const sender = this.waitingUsers.get(senderId);
-            if (sender) {
-              this.acceptMatch(userId, senderId);
-            }
-          }
-        });
-
-      // Subscribe to the channel with error handling
-      this.channel.subscribe(async (status: string, err?: any) => {
-        if (status === 'SUBSCRIBED') {
-          // Track our presence once subscribed
-          try {
-            await this.channel.track({
-              userId: userId,
-              username: user.username,
-              avatarUrl: user.avatarUrl,
-              looking: true,
-              joinedAt: new Date().toISOString()
-            });
-            this.logDebug('Successfully joined matchmaking channel');
-            toast.success("Connected to matchmaking service");
-            this.lastPresenceUpdate = Date.now();
-          } catch (trackError) {
-            console.error('Error tracking presence:', trackError);
-            toast.error("Failed to register in matchmaking");
-          }
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          this.logDebug(`Channel error or timeout: ${status}`, err);
-          // Retry connection
-          setTimeout(() => this.setupChannelWithRetry(userId, user), 2000);
-        } else {
-          this.logDebug('Matchmaking channel subscription status:', status);
-        }
-      });
-    } catch (error) {
-      console.error('Error in setupChannelWithRetry:', error);
-      // Retry after delay
-      setTimeout(() => this.setupChannelWithRetry(userId, user), 2000);
-    }
-  }
-
-  private refreshPresence(userId: string, user: User): void {
-    if (!this.channel) return;
-    
-    // Only refresh presence if more than 5 seconds have passed since last update
-    const now = Date.now();
-    if (now - this.lastPresenceUpdate > 5000) {
-      try {
-        this.channel.track({
-          userId: userId,
-          username: user.username,
-          avatarUrl: user.avatarUrl,
-          looking: true,
-          joinedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        });
-        this.lastPresenceUpdate = now;
-        this.logDebug('Refreshed presence in matchmaking channel');
-      } catch (error) {
-        console.error('Error refreshing presence:', error);
+    if (targetId === currentUserId) {
+      // Someone wants to match with us
+      const sender = this.waitingUsers.get(senderId);
+      if (sender) {
+        this.acceptMatch(currentUserId, senderId);
       }
     }
   }
 
   private updateWaitingUsers(state: Record<string, any[]>): void {
     // Log the raw presence state for debugging
-    this.logDebug('Raw presence state:', JSON.stringify(state));
+    this.logger.log('Raw presence state:', JSON.stringify(state));
     
     // Reset waiting users based on current presence state
     const previousUsers = new Map(this.waitingUsers);
@@ -291,11 +191,11 @@ class RealTimeMatchmakingService {
           avatarUrl: userPresence.avatarUrl
         };
         this.waitingUsers.set(userId, user);
-        this.logDebug(`Added user ${userId} from presence state`);
+        this.logger.log(`Added user ${userId} from presence state`);
       }
     });
     
-    this.logDebug("Updated waiting users:", Array.from(this.waitingUsers.keys()));
+    this.logger.log("Updated waiting users:", Array.from(this.waitingUsers.keys()));
     
     // Check for matches immediately after presence sync
     if (this.userId) {
@@ -304,7 +204,7 @@ class RealTimeMatchmakingService {
   }
 
   public cancelMatchmaking(userId: string): void {
-    this.logDebug(`User ${userId} cancelled matchmaking`);
+    this.logger.log(`User ${userId} cancelled matchmaking`);
     this.waitingUsers.delete(userId);
     this.callbacks.delete(userId);
     this.noUsersCallbacks.delete(userId);
@@ -317,15 +217,7 @@ class RealTimeMatchmakingService {
     this.botMatchService.clearBotMatchTimeout();
     
     // Clean up Supabase Realtime channel
-    if (this.channel) {
-      try {
-        this.channel.untrack();
-        supabase.removeChannel(this.channel);
-        this.channel = null;
-      } catch (error) {
-        console.error('Error removing channel:', error);
-      }
-    }
+    this.channelManager.cleanup();
   }
 
   public leaveBattle(userId: string): void {
@@ -333,19 +225,11 @@ class RealTimeMatchmakingService {
     if (opponentId) {
       this.activeMatches.delete(userId);
       this.activeMatches.delete(opponentId);
-      this.logDebug(`User ${userId} left battle with ${opponentId}`);
+      this.logger.log(`User ${userId} left battle with ${opponentId}`);
     }
     
     // Clean up Supabase Realtime channel
-    if (this.channel) {
-      try {
-        this.channel.untrack();
-        supabase.removeChannel(this.channel);
-        this.channel = null;
-      } catch (error) {
-        console.error('Error removing channel:', error);
-      }
-    }
+    this.channelManager.cleanup();
   }
 
   public setUserStream(userId: string, stream: MediaStream): void {
@@ -381,15 +265,7 @@ class RealTimeMatchmakingService {
     this.botMatchService.clearBotMatchTimeout();
     
     // Clean up Supabase Realtime channel
-    if (this.channel) {
-      try {
-        this.channel.untrack();
-        supabase.removeChannel(this.channel);
-      } catch (error) {
-        console.error('Error removing channel:', error);
-      }
-      this.channel = null;
-    }
+    this.channelManager.cleanup();
   }
 
   public isBotMatchEnabled(): boolean {
@@ -398,29 +274,30 @@ class RealTimeMatchmakingService {
 
   private checkForMatches(currentUserId: string): void {
     if (!this.waitingUsers.has(currentUserId)) {
-      this.logDebug(`User ${currentUserId} is no longer waiting for a match`);
+      this.logger.log(`User ${currentUserId} is no longer waiting for a match`);
       return;
     }
     
     const otherUsers = Array.from(this.waitingUsers.entries())
       .filter(([userId]) => userId !== currentUserId);
     
-    this.logDebug(`Checking for matches for user ${currentUserId}, available users:`, 
+    this.logger.log(`Checking for matches for user ${currentUserId}, available users:`, 
       otherUsers.map(([id, user]) => `${id} (${user.username})`));
     
     if (otherUsers.length === 0) {
-      this.logDebug(`No other users available for user ${currentUserId}`);
+      this.logger.log(`No other users available for user ${currentUserId}`);
       return;
     }
 
     // Find the first available user
     const [opponentId, opponent] = otherUsers[0];
-    this.logDebug(`Found a potential match between ${currentUserId} and ${opponentId}`);
+    this.logger.log(`Found a potential match between ${currentUserId} and ${opponentId}`);
     
     // Initiate match with this user
-    if (this.channel) {
+    const channel = this.channelManager.getChannel();
+    if (channel) {
       try {
-        this.channel.send({
+        channel.send({
           type: 'broadcast',
           event: 'match_accept',
           payload: {
@@ -428,7 +305,7 @@ class RealTimeMatchmakingService {
             targetId: opponentId
           }
         });
-        this.logDebug(`Match request sent to ${opponentId}`);
+        this.logger.log(`Match request sent to ${opponentId}`);
         
         // Auto-accept after a short delay
         // This helps when there are network issues or sync issues
@@ -445,13 +322,13 @@ class RealTimeMatchmakingService {
 
   private acceptMatch(currentUserId: string, opponentId: string): void {
     if (!this.waitingUsers.has(currentUserId) || !this.waitingUsers.has(opponentId)) {
-      this.logDebug(`Accept match failed: one of the users not available`, 
+      this.logger.log(`Accept match failed: one of the users not available`, 
         {currentUserAvailable: this.waitingUsers.has(currentUserId), 
          opponentAvailable: this.waitingUsers.has(opponentId)});
       return;
     }
     
-    this.logDebug(`Accepting match between ${currentUserId} and ${opponentId}`);
+    this.logger.log(`Accepting match between ${currentUserId} and ${opponentId}`);
     
     const currentUser = this.waitingUsers.get(currentUserId)!;
     const opponent = this.waitingUsers.get(opponentId)!;
