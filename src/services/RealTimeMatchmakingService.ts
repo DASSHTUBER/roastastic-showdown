@@ -1,260 +1,202 @@
 
-import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
-import { ChannelManager } from './matchmaking/ChannelManager';
-import { Presence } from './matchmaking/types';
+import { supabase } from '@/integrations/supabase/client';
 import { DebugLogger } from './matchmaking/DebugLogger';
+import { User } from './matchmaking/types';
+import { ChannelManager } from './matchmaking/ChannelManager';
 import { PresenceHandler } from './matchmaking/PresenceHandler';
 import { StorageEventService } from './matchmaking/StorageEventService';
-
-export type MatchmakingOptions = {
-  gameType: string;
-  skillLevel?: string;
-  region?: string;
-  isPrivate?: boolean;
-  maxPlayers?: number;
-  privateRoomCode?: string;
-};
-
-export type UserStatus = 'online' | 'away' | 'matchmaking' | 'in-game';
-
-export interface User {
-  id: string;
-  username: string;
-  avatarUrl?: string;
-  status?: UserStatus;
-  skillLevel?: string;
-  region?: string;
-}
-
-export type MatchmakingState = {
-  status: 'idle' | 'searching' | 'matched' | 'error';
-  error?: string;
-  matchId?: string;
-  opponents?: User[];
-  options?: MatchmakingOptions;
-};
-
-export type UserJoinCallback = (user: User) => void;
-export type UserLeaveCallback = (userId: string) => void;
-export type MatchFoundCallback = (matchId: string, users: User[]) => void;
-export type ErrorCallback = (error: Error) => void;
+import { BotMatchService } from './matchmaking/BotMatchService';
 
 export class RealTimeMatchmakingService {
-  private static instance: RealTimeMatchmakingService;
   private channel: RealtimeChannel | null = null;
-  private user: User | null = null;
-  private state: MatchmakingState = { status: 'idle' };
-  private options: MatchmakingOptions | null = null;
+  private userStream: MediaStream | null = null;
+  private userId: string = '';
+  private username: string = '';
+  private logger: DebugLogger;
   private channelManager: ChannelManager;
   private presenceHandler: PresenceHandler;
-  private debug: DebugLogger;
   private storageEventService: StorageEventService;
-  private isDebugMode: boolean = false;
+  private botMatchService: BotMatchService;
+  private matchmakingCallbacks: ((opponent: User) => void)[] = [];
+  private noUsersCallbacks: (() => void)[] = [];
+  private currentOpponent: User | null = null;
+  private isMatchmaking: boolean = false;
+  private isBotMatchEnabled: boolean = true;
 
-  private onUserJoinCallback: UserJoinCallback | null = null;
-  private onUserLeaveCallback: UserLeaveCallback | null = null;
-  private onMatchFoundCallback: MatchFoundCallback | null = null;
-  private onErrorCallback: ErrorCallback | null = null;
-
-  private constructor() {
-    this.debug = new DebugLogger('RealTimeMatchmakingService', false);
-    this.channelManager = new ChannelManager(this.debug);
-    this.presenceHandler = new PresenceHandler(this.debug);
-    this.storageEventService = new StorageEventService();
-    
-    this.debug.log('Service initialized');
+  constructor() {
+    this.logger = new DebugLogger('Matchmaking', false);
+    this.channelManager = new ChannelManager(this.logger);
+    this.presenceHandler = new PresenceHandler(this.logger);
+    this.storageEventService = new StorageEventService(this.logger);
+    this.botMatchService = new BotMatchService();
   }
 
-  public static getInstance(): RealTimeMatchmakingService {
-    if (!RealTimeMatchmakingService.instance) {
-      RealTimeMatchmakingService.instance = new RealTimeMatchmakingService();
-    }
-    return RealTimeMatchmakingService.instance;
+  public initialize(userId: string, username: string): void {
+    this.userId = userId;
+    this.username = username;
+    this.logger.log(`Initialized with user ID: ${userId}, username: ${username}`);
   }
 
-  public setDebugMode(enabled: boolean): void {
-    this.isDebugMode = enabled;
-    this.debug.setDebugMode(enabled);
+  public getCurrentUserId(): string {
+    return this.userId;
   }
 
-  public setUser(user: User): void {
-    this.user = user;
-    this.debug.log('User set:', user);
+  public setUserStream(stream: MediaStream): void {
+    this.userStream = stream;
+    this.logger.log('User stream set');
   }
 
-  public getState(): MatchmakingState {
-    return this.state;
-  }
-
-  public onUserJoin(callback: UserJoinCallback): void {
-    this.onUserJoinCallback = callback;
-  }
-
-  public onUserLeave(callback: UserLeaveCallback): void {
-    this.onUserLeaveCallback = callback;
-  }
-
-  public onMatchFound(callback: MatchFoundCallback): void {
-    this.onMatchFoundCallback = callback;
-  }
-
-  public onError(callback: ErrorCallback): void {
-    this.onErrorCallback = callback;
-  }
-
-  public async startMatchmaking(options: MatchmakingOptions): Promise<void> {
-    if (!this.user) {
-      this.handleError(new Error('No user set'));
+  public findMatch(callback: (opponent: User) => void, noUsersCallback?: () => void): void {
+    if (!this.userId || !this.username) {
+      this.logger.error('Cannot find match without user ID and username', new Error('Missing user information'));
       return;
     }
 
-    this.options = options;
-    this.state = { status: 'searching', options };
-
-    try {
-      const channelName = this.getChannelName(options);
-      this.debug.log('Starting matchmaking in channel:', channelName);
-
-      this.channel = this.channelManager.joinChannel(
-        channelName,
-        this.handlePresenceSync.bind(this),
-        this.handleUserJoin.bind(this),
-        this.handleUserLeave.bind(this)
-      );
-
-      await this.channel.subscribe();
-      
-      await this.channel.track({
-        user_id: this.user.id,
-        username: this.user.username,
-        avatar_url: this.user.avatarUrl,
-        status: 'matchmaking',
-        skill_level: this.user.skillLevel || options.skillLevel,
-        region: this.user.region || options.region,
-        joined_at: new Date().toISOString(),
-      });
-
-      this.debug.log('Joined channel and tracking presence');
-    } catch (error) {
-      this.handleError(error as Error);
+    if (this.isMatchmaking) {
+      this.logger.log('Already matchmaking, canceling previous matchmaking');
+      this.cancelMatchmaking();
     }
+
+    this.isMatchmaking = true;
+    this.matchmakingCallbacks.push(callback);
+    if (noUsersCallback) {
+      this.noUsersCallbacks.push(noUsersCallback);
+    }
+
+    this.connectToMatchmakingChannel();
   }
 
-  public async stopMatchmaking(): Promise<void> {
-    if (!this.channel || !this.user) {
-      this.debug.log('No channel or user to stop matchmaking for.');
-      return;
-    }
-
-    try {
-      this.debug.log('Stopping matchmaking');
-      await this.channel.untrack();
-      this.debug.log('Untracked presence');
-      await this.channel.unsubscribe();
-      this.debug.log('Unsubscribed from channel');
-      this.channelManager.leaveChannel(this.channel.topic);
-      this.debug.log('Left channel');
-    } catch (error) {
-      this.handleError(error as Error);
-    } finally {
-      this.channel = null;
-      this.options = null;
-      this.state = { status: 'idle' };
-      this.debug.log('Matchmaking stopped and state reset');
-    }
-  }
-
-  private getChannelName(options: MatchmakingOptions): string {
-    let channelName = `matchmaking:${options.gameType}`;
+  private connectToMatchmakingChannel(): void {
+    const channelName = 'matchmaking';
     
-    if (options.skillLevel) {
-      channelName += `:${options.skillLevel}`;
-    }
-    if (options.region) {
-      channelName += `:${options.region}`;
-    }
-    if (options.isPrivate && options.privateRoomCode) {
-      channelName += `:private-${options.privateRoomCode}`;
-    }
+    this.channel = this.channelManager.joinChannel(channelName, {
+      config: {
+        presence: {
+          key: this.userId,
+        },
+      },
+    });
 
-    return channelName;
-  }
+    this.channel.on('presence', { event: 'sync' }, () => {
+      this.handlePresenceSync();
+    });
 
-  private async handlePresenceSync(): Promise<void> {
-    if (!this.channel) return;
+    this.channel.on('presence', { event: 'join' }, ({ newPresences }) => {
+      this.logger.log('New presences joined', newPresences);
+      this.checkForMatchmaking();
+    });
 
-    const presence = this.channelManager.getChannelPresence(this.channel.topic);
-    this.debug.log('Handling presence sync:', presence);
+    this.channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
+      this.logger.log('Presences left', leftPresences);
+    });
 
-    if (!presence) return;
-
-    const users = this.presenceHandler.getUsersFromPresence(presence);
-    this.debug.log('Users in channel:', users);
-
-    if (this.options?.maxPlayers && users.length >= this.options?.maxPlayers && this.user) {
-      this.debug.log('Max players reached, attempting to create match');
-      
-      const userDetails = users.map(user => ({
-        user_id: user.user_id,
-        username: user.username,
-        avatar_url: user.avatar_url,
-        status: user.status,
-        skill_level: user.skill_level,
-        region: user.region
-      }));
-
-      try {
-        const matchId = await this.storageEventService.createMatch(
-          this.options.gameType,
-          userDetails
-        );
-
-        this.state = { status: 'matched', matchId, opponents: users as unknown as User[] };
-        this.debug.log('Match created with ID:', matchId, 'State:', this.state);
-        
-        if (this.onMatchFoundCallback) {
-          const usersForCallback: User[] = users.map(p => ({
-            id: p.user_id,
-            username: p.username,
-            avatarUrl: p.avatar_url,
-            status: p.status as UserStatus,
-            skillLevel: p.skill_level,
-            region: p.region
-          }));
-          this.onMatchFoundCallback(matchId, usersForCallback);
-        }
-      } catch (storageError) {
-        this.handleError(storageError as Error);
+    this.channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        this.channel?.track({
+          user_id: this.userId,
+          username: this.username,
+          looking_for_match: true,
+          joined_at: new Date().toISOString(),
+        });
       }
-    }
+    });
   }
 
-  private handleUserLeave(presence: Presence): void {
-    if (!this.user || !this.onUserLeaveCallback) return;
-    this.onUserLeaveCallback(presence.user_id);
-  }
-
-  private handleError(error: Error): void {
-    console.error('Matchmaking Error:', error);
-    this.state = { status: 'error', error: error.message };
-    if (this.onErrorCallback) {
-      this.onErrorCallback(error);
-    }
-  }
-
-  private handleUserJoin(presence: Presence): void {
-    if (!this.user || !this.onUserJoinCallback) return;
+  public cancelMatchmaking(): void {
+    this.isMatchmaking = false;
+    this.matchmakingCallbacks = [];
+    this.noUsersCallbacks = [];
     
-    const user: User = {
-      id: presence.user_id,
-      username: presence.username,
-      avatarUrl: presence.avatar_url,
-      status: presence.status as UserStatus,
-      skillLevel: presence.skill_level,
-      region: presence.region
-    };
+    if (this.channel) {
+      this.channelManager.leaveChannel(this.channel.channelId);
+      this.channel = null;
+    }
     
-    this.onUserJoinCallback(user);
+    this.logger.log('Matchmaking canceled');
+  }
+
+  private handlePresenceSync(): void {
+    this.checkForMatchmaking();
+  }
+
+  private checkForMatchmaking(): void {
+    if (!this.isMatchmaking || !this.channel) {
+      return;
+    }
+
+    const presences = this.channelManager.getChannelPresence(this.channel.channelId);
+    this.logger.log('Current presences', presences);
+
+    const users = this.presenceHandler.getUsersFromPresence(presences);
+    const availableUsers = users.filter(user => user.id !== this.userId);
+
+    if (availableUsers.length === 0) {
+      this.handleNoUsersAvailable();
+      return;
+    }
+
+    // Simple random matching for now
+    const randomUser = availableUsers[Math.floor(Math.random() * availableUsers.length)];
+    this.matchWithUser(randomUser);
+  }
+
+  private matchWithUser(user: User): void {
+    this.currentOpponent = user;
+    this.isMatchmaking = false;
+    
+    this.storageEventService.createMatch(this.userId, user.id);
+    
+    this.executeMatchmakingCallbacks(user);
+    
+    this.cancelMatchmaking();
+  }
+
+  public matchWithBot(): void {
+    const botUser = this.botMatchService.createBotUser();
+    this.matchWithUser(botUser);
+  }
+
+  private handleNoUsersAvailable(): void {
+    this.logger.log('No users available for matchmaking');
+    
+    if (this.isBotMatchEnabled) {
+      setTimeout(() => {
+        this.matchWithBot();
+      }, 3000);
+      return;
+    }
+    
+    this.executeNoUsersCallbacks();
+  }
+
+  private executeMatchmakingCallbacks(opponent: User): void {
+    this.matchmakingCallbacks.forEach(callback => {
+      try {
+        callback(opponent);
+      } catch (error) {
+        this.logger.error('Error executing matchmaking callback', error);
+      }
+    });
+    this.matchmakingCallbacks = [];
+  }
+
+  private executeNoUsersCallbacks(): void {
+    this.noUsersCallbacks.forEach(callback => {
+      try {
+        callback();
+      } catch (error) {
+        this.logger.error('Error executing no users callback', error);
+      }
+    });
+    this.noUsersCallbacks = [];
+  }
+
+  public leaveBattle(): void {
+    // Implement leaving a battle
+    this.currentOpponent = null;
+    this.logger.log('Left battle');
   }
 }
+
+export const realTimeMatchmakingService = new RealTimeMatchmakingService();

@@ -1,96 +1,44 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { User } from "./types";
-import { DebugLogger } from "./DebugLogger";
+import { RealtimeChannel } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+import { DebugLogger } from './DebugLogger';
 
 export class ChannelManager {
-  private channels: Map<string, any> = new Map();
-  private connectionRetries: number = 0;
-  private maxRetries: number = 3;
+  private channels: Map<string, RealtimeChannel> = new Map();
   private logger: DebugLogger;
 
-  constructor(logger?: DebugLogger) {
-    this.logger = logger || new DebugLogger("ChannelManager");
+  constructor(logger: DebugLogger) {
+    this.logger = logger;
   }
 
-  public joinChannel(
-    channelName: string,
-    onSync: (state: Record<string, any[]>) => void,
-    onJoin: (presence: any) => void,
-    onLeave: (presence: any) => void
-  ): any {
-    try {
-      this.logger.log(`Joining channel: ${channelName}`);
-      
-      // Create the channel if it doesn't exist
-      const channel = supabase.channel(channelName, {
-        config: {
-          presence: {
-            key: channelName,
-          },
-        },
-      });
+  public joinChannel(channelName: string, options?: any): RealtimeChannel {
+    if (this.channels.has(channelName)) {
+      this.logger.log(`Reusing existing channel: ${channelName}`);
+      return this.channels.get(channelName)!;
+    }
 
-      // Setup presence handlers
-      channel
-        .on('presence', { event: 'sync' }, () => {
-          this.logger.log('Presence sync event received');
-          const state = channel.presenceState();
-          this.logger.log('Current presence state:', state);
-          
-          // Update waitingUsers based on presence state
-          onSync(state);
-        })
-        .on('presence', { event: 'join' }, ({ key, newPresences }: { key: string, newPresences: any[] }) => {
-          if (newPresences && newPresences.length > 0) {
-            onJoin(newPresences[0]);
-          }
-        })
-        .on('presence', { event: 'leave' }, ({ key, leftPresences }: { key: string, leftPresences: any[] }) => {
-          if (leftPresences && leftPresences.length > 0) {
-            onLeave(leftPresences[0]);
-          }
-        });
+    this.logger.log(`Joining channel: ${channelName}`);
+    const channel = supabase.channel(channelName, options);
+    this.channels.set(channelName, channel);
+    return channel;
+  }
 
-      // Store the channel
-      this.channels.set(channelName, channel);
-      
-      return channel;
-    } catch (error) {
-      this.logger.error('Error joining channel:', error);
-      throw error;
+  public leaveChannel(channelId: string): void {
+    if (this.channels.has(channelId)) {
+      this.logger.log(`Leaving channel: ${channelId}`);
+      const channel = this.channels.get(channelId)!;
+      channel.unsubscribe();
+      this.channels.delete(channelId);
     }
   }
 
-  public leaveChannel(channelName: string): void {
-    try {
-      const channel = this.channels.get(channelName);
-      if (channel) {
-        this.logger.log(`Leaving channel: ${channelName}`);
-        
-        // Untrack presence and remove channel
-        channel.untrack();
-        supabase.removeChannel(channel);
-        
-        // Remove from our channels map
-        this.channels.delete(channelName);
-      }
-    } catch (error) {
-      this.logger.error('Error leaving channel:', error);
+  public getChannelPresence(channelId: string): any {
+    if (!this.channels.has(channelId)) {
+      this.logger.log(`Channel not found: ${channelId}`);
+      return [];
     }
-  }
-
-  public getChannelPresence(channelName: string): Record<string, any[]> | null {
-    try {
-      const channel = this.channels.get(channelName);
-      if (channel) {
-        return channel.presenceState();
-      }
-      return null;
-    } catch (error) {
-      this.logger.error('Error getting channel presence:', error);
-      return null;
-    }
+    
+    const channel = this.channels.get(channelId)!;
+    return channel.presenceState();
   }
 }
