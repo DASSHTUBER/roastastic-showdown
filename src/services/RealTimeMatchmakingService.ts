@@ -22,6 +22,8 @@ export class RealTimeMatchmakingService {
   private userId: string | null = null;
   private username: string | null = null;
   private _isBotMatchEnabled: boolean = false;
+  private matchmakingTimeout: NodeJS.Timeout | null = null;
+  private isLookingForMatch: boolean = false;
   
   // Private constructor for Singleton pattern
   private constructor() {
@@ -55,7 +57,7 @@ export class RealTimeMatchmakingService {
     
     try {
       // Create or join the channel
-      this.channel = await this.channelManager.joinChannel(supabase, this.channelName);
+      this.channel = await this.channelManager.joinChannel(this.channelName);
       
       if (!this.channel) {
         throw new Error('Failed to join channel');
@@ -66,6 +68,20 @@ export class RealTimeMatchmakingService {
         user_id: userId,
         username: username,
         online_at: new Date().toISOString(),
+        status: 'waiting'
+      });
+
+      // Subscribe to presence changes
+      this.channel.on('presence', { event: 'sync' }, () => {
+        this.handlePresenceSync();
+      });
+
+      this.channel.on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        this.handlePresenceJoin(newPresences);
+      });
+
+      this.channel.on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        this.handlePresenceLeave(leftPresences);
       });
       
       this.debugLogger.log('Successfully joined matchmaking channel');
@@ -73,6 +89,88 @@ export class RealTimeMatchmakingService {
     } catch (error) {
       this.debugLogger.error('Error joining matchmaking', error as Error);
       throw error;
+    }
+  }
+
+  private handlePresenceSync() {
+    if (!this.channel) return;
+    
+    const presenceState = this.channelManager.getChannelPresence(this.channel);
+    const onlineUsers = this.presenceHandler.getUsersFromPresence(presenceState);
+    
+    if (this.isLookingForMatch) {
+      this.findMatch(onlineUsers);
+    }
+  }
+
+  private handlePresenceJoin(newPresences: any[]) {
+    if (!this.isLookingForMatch) return;
+    
+    const onlineUsers = this.presenceHandler.getUsersFromPresence(
+      this.channelManager.getChannelPresence(this.channel!)
+    );
+    
+    this.findMatch(onlineUsers);
+  }
+
+  private handlePresenceLeave(leftPresences: any[]) {
+    // Handle user leaving if needed
+  }
+
+  private async findMatch(onlineUsers: User[]) {
+    if (!this.user || !this.userId) return;
+
+    // Filter out current user and find available opponents
+    const availableOpponents = onlineUsers.filter(
+      user => user.id !== this.userId && user.status === 'waiting'
+    );
+
+    if (availableOpponents.length > 0) {
+      // Select the first available opponent
+      const opponent = availableOpponents[0];
+      
+      // Update status to matched
+      await this.channel?.track({
+        ...this.user,
+        status: 'matched',
+        opponent_id: opponent.id
+      });
+
+      // Create the match
+      const matchId = await this.createMatch(opponent.id);
+      this.debugLogger.log('Match created', { matchId, opponent });
+      
+      // Stop looking for matches
+      this.isLookingForMatch = false;
+      if (this.matchmakingTimeout) {
+        clearTimeout(this.matchmakingTimeout);
+        this.matchmakingTimeout = null;
+      }
+    }
+  }
+
+  // Start looking for a match
+  public async startMatchmaking(): Promise<void> {
+    if (!this.channel || !this.user) {
+      throw new Error('Not connected to matchmaking channel');
+    }
+
+    this.isLookingForMatch = true;
+    
+    // Update status to waiting
+    await this.channel.track({
+      ...this.user,
+      status: 'waiting'
+    });
+
+    // Set a timeout for bot match if enabled
+    if (this._isBotMatchEnabled) {
+      this.matchmakingTimeout = setTimeout(async () => {
+        if (this.isLookingForMatch) {
+          this.debugLogger.log('No human opponent found, creating bot match');
+          await this.createBotMatch();
+        }
+      }, 30000); // 30 seconds timeout
     }
   }
 
@@ -84,11 +182,17 @@ export class RealTimeMatchmakingService {
     }
     
     try {
+      if (this.matchmakingTimeout) {
+        clearTimeout(this.matchmakingTimeout);
+        this.matchmakingTimeout = null;
+      }
+      
       await this.channelManager.leaveChannel(this.channel);
       this.channel = null;
       this.userId = null;
       this.username = null;
       this.user = null;
+      this.isLookingForMatch = false;
       this.debugLogger.log('Left matchmaking channel');
     } catch (error) {
       this.debugLogger.error('Error leaving matchmaking', error as Error);

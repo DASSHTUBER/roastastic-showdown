@@ -1,10 +1,11 @@
-
 export interface User {
   id: string;
   username: string;
   avatarUrl?: string;
   stream?: MediaStream;
   isBot?: boolean;
+  status?: 'waiting' | 'matched' | 'in_battle';
+  opponent_id?: string;
 }
 
 export interface Presence {

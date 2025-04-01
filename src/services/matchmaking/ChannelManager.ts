@@ -1,4 +1,3 @@
-
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { DebugLogger } from './DebugLogger';
@@ -11,7 +10,7 @@ export class ChannelManager {
     this.logger = logger;
   }
 
-  public joinChannel(channelName: string, options?: any): RealtimeChannel | null {
+  public async joinChannel(channelName: string, options?: any): Promise<RealtimeChannel | null> {
     if (this.channels.has(channelName)) {
       this.logger.log(`Reusing existing channel: ${channelName}`);
       return this.channels.get(channelName)!;
@@ -20,6 +19,7 @@ export class ChannelManager {
     try {
       this.logger.log(`Joining channel: ${channelName}`);
       const channel = supabase.channel(channelName, options);
+      await channel.subscribe();
       this.channels.set(channelName, channel);
       return channel;
     } catch (error) {
@@ -28,11 +28,11 @@ export class ChannelManager {
     }
   }
 
-  public leaveChannel(channel: RealtimeChannel): void {
+  public async leaveChannel(channel: RealtimeChannel): Promise<void> {
     const channelId = channel.topic || '';
     if (this.channels.has(channelId)) {
       this.logger.log(`Leaving channel: ${channelId}`);
-      channel.unsubscribe();
+      await channel.unsubscribe();
       this.channels.delete(channelId);
     }
   }

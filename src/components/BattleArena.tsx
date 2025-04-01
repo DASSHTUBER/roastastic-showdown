@@ -58,6 +58,7 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
       
       if (!isDemo) {
         requestMediaPermissions();
+        startMatchmaking();
       }
     }
   }, [isDemo, started]);
@@ -72,6 +73,22 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
       setMediaError("Please allow camera and microphone access for the full experience");
       toast.error("Please allow camera and microphone access for the full experience");
       console.error("Media permissions error:", error);
+    }
+  };
+  
+  const startMatchmaking = async () => {
+    try {
+      const matchmakingService = RealTimeMatchmakingService.getInstance();
+      const userId = matchmakingService.getCurrentUserId();
+      const username = localStorage.getItem('username') || `User_${userId?.slice(0, 4) || 'anonymous'}`;
+      
+      if (userId && username) {
+        await matchmakingService.joinMatchmaking(userId, username);
+        await matchmakingService.startMatchmaking();
+      }
+    } catch (error) {
+      console.error('Error starting matchmaking:', error);
+      toast.error('Failed to start matchmaking. Please try again.');
     }
   };
   
