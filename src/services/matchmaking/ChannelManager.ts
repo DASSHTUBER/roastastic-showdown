@@ -18,8 +18,36 @@ export class ChannelManager {
 
     try {
       this.logger.log(`Joining channel: ${channelName}`);
-      const channel = supabase.channel(channelName, options);
-      await channel.subscribe();
+      const channel = supabase.channel(channelName, {
+        config: {
+          presence: {
+            key: 'matchmaking',
+          },
+          broadcast: {
+            self: true
+          }
+        }
+      });
+
+      channel
+        .on('presence', { event: 'sync' }, () => {
+          this.logger.log('Presence sync event received');
+        })
+        .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+          this.logger.log('Presence join event', { key, newPresences });
+        })
+        .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+          this.logger.log('Presence leave event', { key, leftPresences });
+        });
+
+      const status = await channel.subscribe(async (status) => {
+        this.logger.log(`Channel status: ${status}`);
+      });
+
+      if (status !== 'SUBSCRIBED') {
+        throw new Error(`Failed to subscribe to channel: ${status}`);
+      }
+
       this.channels.set(channelName, channel);
       return channel;
     } catch (error) {
@@ -45,7 +73,9 @@ export class ChannelManager {
     }
     
     try {
-      return channel.presenceState();
+      const state = channel.presenceState();
+      this.logger.log('Current presence state:', state);
+      return state;
     } catch (error) {
       this.logger.error(`Error getting presence state for channel: ${channelId}`, error as Error);
       return {};
