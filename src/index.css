@@ -1,0 +1,265 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 15 100% 97%;
+    --foreground: 20 80% 25%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 20 80% 25%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 80% 25%;
+
+    --primary: 12 100% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 30 100% 60%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 15 50% 90%;
+    --muted-foreground: 20 60% 40%;
+
+    --accent: 45 100% 60%;
+    --accent-foreground: 20 80% 25%;
+
+    --destructive: 0 100% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 15 50% 85%;
+    --input: 15 50% 85%;
+    --ring: 12 100% 60%;
+
+    --radius: 1.5rem;
+
+    --sidebar-background: 15 100% 97%;
+    --sidebar-foreground: 20 80% 25%;
+    --sidebar-primary: 12 100% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 100% 60%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 15 50% 85%;
+    --sidebar-ring: 12 100% 60%;
+    
+    /* Gartic Phone Theme Colors */
+    --gartic-purple: 280 50% 60%;
+    --gartic-purple-light: 280 50% 75%;
+    --gartic-purple-dark: 280 50% 45%;
+    --gartic-neon-green: 100 100% 50%;
+    --gartic-neon-blue: 195 100% 50%;
+    --gartic-accent: 12 100% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-roast-dark-gray text-foreground antialiased overflow-x-hidden;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ff3a2f' fill-opacity='0.1'%3E%3Cpath d='M50 100c27.6 0 50-22.4 50-50S77.6 0 50 0 0 22.4 0 50s22.4 50 50 50zm0-10c22.1 0 40-17.9 40-40S72.1 10 50 10 10 27.9 10 50s17.9 40 40 40z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply backdrop-blur-xl bg-white/20 border border-roast-red/30 shadow-[0_4px_12px_-2px_rgba(255,58,47,0.2)];
+  }
+  
+  .glass-light {
+    @apply backdrop-blur-xl bg-white/90 border border-roast-orange/30 shadow-[0_8px_16px_-4px_rgba(255,58,47,0.2)] rounded-2xl;
+  }
+  
+  .candy-container {
+    @apply bg-gradient-to-br from-roast-red/95 to-roast-orange/95 rounded-3xl shadow-lg border-4 border-roast-red/20;
+  }
+  
+  .candy-panel {
+    @apply bg-gradient-to-r from-roast-orange to-roast-red rounded-xl shadow-md border-2 border-white/30;
+  }
+  
+  .candy-button {
+    @apply bg-gradient-to-r from-roast-red to-roast-orange rounded-full shadow-md border-2 border-white/50 text-white font-bold hover:shadow-[0_8px_20px_-4px_rgba(255,58,47,0.4)] hover:brightness-110 transition-all;
+  }
+  
+  .candy-accent-button {
+    @apply bg-gradient-to-r from-roast-yellow to-roast-orange rounded-full shadow-md border-2 border-white/50 text-white font-bold hover:shadow-[0_8px_20px_-4px_rgba(255,149,0,0.4)] hover:brightness-110 transition-all;
+  }
+  
+  .candy-item {
+    @apply rounded-2xl bg-gradient-to-br from-white/90 to-white/70 border-2 border-roast-red/30 shadow-[0_8px_20px_-4px_rgba(255,58,47,0.3)] p-1;
+  }
+  
+  .candy-stripes {
+    background: repeating-linear-gradient(
+      45deg,
+      theme('colors.roast.red'),
+      theme('colors.roast.red') 20px,
+      theme('colors.roast.orange') 20px,
+      theme('colors.roast.orange') 40px
+    );
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-b from-roast-red via-roast-orange to-roast-yellow bg-clip-text text-transparent;
+  }
+  
+  .button-gradient {
+    @apply bg-roast-orange hover:bg-roast-red transition-all duration-300;
+  }
+  
+  .section-padding {
+    @apply py-12 px-6 md:px-12 lg:px-24;
+  }
+  
+  .video-container {
+    @apply relative overflow-hidden rounded-xl border-4 border-candy-light-pink shadow-lg;
+    aspect-ratio: 16 / 9;
+  }
+  
+  .animate-float {
+    animation: float 2s ease-out forwards;
+  }
+  
+  .animate-pulse-soft {
+    animation: pulse-soft 2s infinite;
+  }
+  
+  .neon-text-green {
+    @apply text-candy-green font-bold;
+    text-shadow: 0 0 5px rgba(126, 217, 87, 0.7), 0 0 10px rgba(126, 217, 87, 0.5);
+  }
+  
+  .neon-text-blue {
+    @apply text-candy-blue font-bold;
+    text-shadow: 0 0 5px rgba(72, 196, 224, 0.7), 0 0 10px rgba(72, 196, 224, 0.5);
+  }
+  
+  .candy-shadow {
+    text-shadow: 2px 2px 0 #FF4090, 4px 4px 0px rgba(160, 102, 211, 0.5);
+  }
+  
+  .candy-title {
+    @apply font-bold text-white candy-shadow;
+  }
+  
+  .candy-border {
+    @apply border-4 border-dashed border-white/50 rounded-2xl p-1;
+  }
+  
+  .candy-dots {
+    background-image: radial-gradient(#FF8ABC 10%, transparent 10%), radial-gradient(#FF8ABC 10%, transparent 10%);
+    background-position: 0 0, 10px 10px;
+    background-size: 20px 20px;
+  }
+  
+  @keyframes float {
+    0% {
+      transform: translateY(0);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    80% {
+      opacity: 0.8;
+    }
+    100% {
+      transform: translateY(-100px);
+      opacity: 0;
+    }
+  }
+  
+  @keyframes pulse-soft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+  
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes scale-in {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slide-in-bottom {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+  }
+  
+  .animate-scale-in {
+    animation: scale-in 0.4s ease-out forwards;
+  }
+  
+  .animate-slide-in-bottom {
+    animation: slide-in-bottom 0.5s ease-out forwards;
+  }
+  
+  /* Fiery Glow Effects */
+  .fire-glow {
+    text-shadow: 0 0 10px rgba(255, 58, 47, 0.7), 0 0 20px rgba(255, 58, 47, 0.5);
+  }
+  
+  .ember-glow {
+    box-shadow: 0 0 10px rgba(255, 149, 0, 0.7), 0 0 20px rgba(255, 58, 47, 0.4);
+  }
+  
+  .fire-button {
+    @apply relative overflow-hidden bg-gradient-to-r from-roast-red to-roast-orange text-white font-bold rounded-md shadow-[0_0_10px_rgba(255,58,47,0.4)] hover:shadow-[0_0_15px_rgba(255,58,47,0.6)] transition-all;
+  }
+  
+  .fire-button::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-t from-roast-red/0 via-white/10 to-white/30 opacity-0 transition-opacity duration-300;
+  }
+  
+  .fire-button:hover::before {
+    @apply opacity-100;
+  }
+  
+  /* New Gartic-themed Elements */
+  .gartic-button {
+    @apply bg-gradient-to-r from-roast-red to-roast-orange text-white rounded-full py-2 px-4 font-bold shadow-md border border-white/20 hover:shadow-[0_0_10px_rgba(255,58,47,0.6)] transition-all;
+  }
+  
+  .gartic-accent-button {
+    @apply bg-gradient-to-r from-roast-yellow to-roast-orange text-white rounded-full py-2 px-4 font-bold shadow-md border border-white/20 hover:shadow-[0_0_10px_rgba(255,149,0,0.6)] transition-all;
+  }
+}
