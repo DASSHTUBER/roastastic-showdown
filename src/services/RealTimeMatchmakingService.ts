@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { User, MatchmakingCallback, NoUsersCallback } from "./matchmaking/types";
 import { generateUserId } from "./matchmaking/utils";
