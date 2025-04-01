@@ -1,48 +1,47 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 330 100% 96%;
-    --foreground: 280 50% 25%;
+    --background: 15 100% 97%;
+    --foreground: 20 80% 25%;
 
     --card: 0 0% 100%;
-    --card-foreground: 280 50% 25%;
+    --card-foreground: 20 80% 25%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 280 50% 25%;
+    --popover-foreground: 20 80% 25%;
 
-    --primary: 326 100% 60%;
+    --primary: 12 100% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 280 50% 60%;
+    --secondary: 30 100% 60%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 330 50% 90%;
-    --muted-foreground: 280 30% 40%;
+    --muted: 15 50% 90%;
+    --muted-foreground: 20 60% 40%;
 
-    --accent: 50 100% 60%;
-    --accent-foreground: 280 50% 25%;
+    --accent: 45 100% 60%;
+    --accent-foreground: 20 80% 25%;
 
     --destructive: 0 100% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 330 50% 85%;
-    --input: 330 50% 85%;
-    --ring: 326 100% 60%;
+    --border: 15 50% 85%;
+    --input: 15 50% 85%;
+    --ring: 12 100% 60%;
 
     --radius: 1.5rem;
 
-    --sidebar-background: 330 100% 96%;
-    --sidebar-foreground: 280 50% 25%;
-    --sidebar-primary: 326 100% 60%;
+    --sidebar-background: 15 100% 97%;
+    --sidebar-foreground: 20 80% 25%;
+    --sidebar-primary: 12 100% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 280 50% 60%;
+    --sidebar-accent: 30 100% 60%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 330 50% 85%;
-    --sidebar-ring: 326 100% 60%;
+    --sidebar-border: 15 50% 85%;
+    --sidebar-ring: 12 100% 60%;
     
     /* Gartic Phone Theme Colors */
     --gartic-purple: 280 50% 60%;
@@ -50,7 +49,7 @@
     --gartic-purple-dark: 280 50% 45%;
     --gartic-neon-green: 100 100% 50%;
     --gartic-neon-blue: 195 100% 50%;
-    --gartic-accent: 326 100% 60%;
+    --gartic-accent: 12 100% 60%;
   }
 }
 
@@ -60,9 +59,9 @@
   }
 
   body {
-    @apply bg-candy-light-pink text-foreground antialiased overflow-x-hidden;
+    @apply bg-roast-dark-gray text-foreground antialiased overflow-x-hidden;
     font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
-    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ff8abc' fill-opacity='0.1'%3E%3Cpath d='M50 100c27.6 0 50-22.4 50-50S77.6 0 50 0 0 22.4 0 50s22.4 50 50 50zm0-10c22.1 0 40-17.9 40-40S72.1 10 50 10 10 27.9 10 50s17.9 40 40 40z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ff3a2f' fill-opacity='0.1'%3E%3Cpath d='M50 100c27.6 0 50-22.4 50-50S77.6 0 50 0 0 22.4 0 50s22.4 50 50 50zm0-10c22.1 0 40-17.9 40-40S72.1 10 50 10 10 27.9 10 50s17.9 40 40 40z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   }
 
   html {
@@ -72,49 +71,49 @@
 
 @layer utilities {
   .glass {
-    @apply backdrop-blur-xl bg-white/20 border border-white/30 shadow-[0_4px_12px_-2px_rgba(255,138,188,0.2)];
+    @apply backdrop-blur-xl bg-white/20 border border-roast-red/30 shadow-[0_4px_12px_-2px_rgba(255,58,47,0.2)];
   }
   
   .glass-light {
-    @apply backdrop-blur-xl bg-white/90 border border-white/30 shadow-[0_8px_16px_-4px_rgba(255,138,188,0.2)] rounded-2xl;
+    @apply backdrop-blur-xl bg-white/90 border border-roast-orange/30 shadow-[0_8px_16px_-4px_rgba(255,58,47,0.2)] rounded-2xl;
   }
   
   .candy-container {
-    @apply bg-gradient-to-br from-candy-pink/95 to-candy-purple/95 rounded-3xl shadow-lg border-4 border-candy-light-pink;
+    @apply bg-gradient-to-br from-roast-red/95 to-roast-orange/95 rounded-3xl shadow-lg border-4 border-roast-red/20;
   }
   
   .candy-panel {
-    @apply bg-gradient-to-r from-candy-purple to-candy-bright-pink rounded-xl shadow-md border-2 border-white/30;
+    @apply bg-gradient-to-r from-roast-orange to-roast-red rounded-xl shadow-md border-2 border-white/30;
   }
   
   .candy-button {
-    @apply bg-gradient-to-r from-candy-bright-pink to-candy-purple rounded-full shadow-md border-2 border-white/50 text-white font-bold hover:shadow-candy-hover hover:brightness-110 transition-all;
+    @apply bg-gradient-to-r from-roast-red to-roast-orange rounded-full shadow-md border-2 border-white/50 text-white font-bold hover:shadow-[0_8px_20px_-4px_rgba(255,58,47,0.4)] hover:brightness-110 transition-all;
   }
   
   .candy-accent-button {
-    @apply bg-gradient-to-r from-candy-green to-candy-blue rounded-full shadow-md border-2 border-white/50 text-white font-bold hover:shadow-candy-hover hover:brightness-110 transition-all;
+    @apply bg-gradient-to-r from-roast-yellow to-roast-orange rounded-full shadow-md border-2 border-white/50 text-white font-bold hover:shadow-[0_8px_20px_-4px_rgba(255,149,0,0.4)] hover:brightness-110 transition-all;
   }
   
   .candy-item {
-    @apply rounded-2xl bg-gradient-to-br from-white/90 to-white/70 border-2 border-white/50 shadow-candy p-1;
+    @apply rounded-2xl bg-gradient-to-br from-white/90 to-white/70 border-2 border-roast-red/30 shadow-[0_8px_20px_-4px_rgba(255,58,47,0.3)] p-1;
   }
   
   .candy-stripes {
     background: repeating-linear-gradient(
       45deg,
-      theme('colors.candy.light-pink'),
-      theme('colors.candy.light-pink') 20px,
-      theme('colors.candy.light-purple') 20px,
-      theme('colors.candy.light-purple') 40px
+      theme('colors.roast.red'),
+      theme('colors.roast.red') 20px,
+      theme('colors.roast.orange') 20px,
+      theme('colors.roast.orange') 40px
     );
   }
   
   .text-gradient {
-    @apply bg-gradient-to-b from-candy-bright-pink to-candy-purple bg-clip-text text-transparent;
+    @apply bg-gradient-to-b from-roast-red via-roast-orange to-roast-yellow bg-clip-text text-transparent;
   }
   
   .button-gradient {
-    @apply bg-candy-orange hover:bg-candy-red transition-all duration-300;
+    @apply bg-roast-orange hover:bg-roast-red transition-all duration-300;
   }
   
   .section-padding {
@@ -231,5 +230,36 @@
   
   .animate-slide-in-bottom {
     animation: slide-in-bottom 0.5s ease-out forwards;
+  }
+  
+  /* Fiery Glow Effects */
+  .fire-glow {
+    text-shadow: 0 0 10px rgba(255, 58, 47, 0.7), 0 0 20px rgba(255, 58, 47, 0.5);
+  }
+  
+  .ember-glow {
+    box-shadow: 0 0 10px rgba(255, 149, 0, 0.7), 0 0 20px rgba(255, 58, 47, 0.4);
+  }
+  
+  .fire-button {
+    @apply relative overflow-hidden bg-gradient-to-r from-roast-red to-roast-orange text-white font-bold rounded-md shadow-[0_0_10px_rgba(255,58,47,0.4)] hover:shadow-[0_0_15px_rgba(255,58,47,0.6)] transition-all;
+  }
+  
+  .fire-button::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-t from-roast-red/0 via-white/10 to-white/30 opacity-0 transition-opacity duration-300;
+  }
+  
+  .fire-button:hover::before {
+    @apply opacity-100;
+  }
+  
+  /* New Gartic-themed Elements */
+  .gartic-button {
+    @apply bg-gradient-to-r from-roast-red to-roast-orange text-white rounded-full py-2 px-4 font-bold shadow-md border border-white/20 hover:shadow-[0_0_10px_rgba(255,58,47,0.6)] transition-all;
+  }
+  
+  .gartic-accent-button {
+    @apply bg-gradient-to-r from-roast-yellow to-roast-orange text-white rounded-full py-2 px-4 font-bold shadow-md border border-white/20 hover:shadow-[0_0_10px_rgba(255,149,0,0.6)] transition-all;
   }
 }
