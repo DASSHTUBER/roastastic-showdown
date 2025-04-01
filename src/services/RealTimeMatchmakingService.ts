@@ -80,7 +80,7 @@ class RealTimeMatchmakingService {
       userId, 
       user, 
       (state) => this.updateWaitingUsers(state),
-      (key, newPresences) => this.handleUserJoin(key, newPresences, userId),
+      (key, newPresences, currentUserId) => this.handleUserJoin(key, newPresences, currentUserId),
       (key) => this.handleUserLeave(key),
       (payload) => this.handleMatchAccept(payload, userId)
     );
