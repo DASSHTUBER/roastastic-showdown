@@ -10,33 +10,26 @@ export class ChannelManager {
     this.logger = logger;
   }
 
-  public async joinChannel(channelName: string, options?: any): Promise<RealtimeChannel | null> {
-    if (this.channels.has(channelName)) {
-      this.logger.log(`Reusing existing channel: ${channelName}`);
-      return this.channels.get(channelName)!;
-    }
-
+  public async joinChannel(channelName: string): Promise<RealtimeChannel | null> {
     try {
-      this.logger.log(`Joining channel: ${channelName}`);
-      const channel = supabase.channel(channelName, {
-        config: {
-          presence: {
-            key: channelName,
-          },
-          broadcast: {
-            self: true,
-            ack: true
-          }
-        },
-        events: {
-          presence: {
-            sync: true,
-            join: true,
-            leave: true
-          }
-        }
-      });
+      this.logger.log(`Attempting to join channel: ${channelName}`);
 
+      // Check if we already have this channel
+      if (this.channels.has(channelName)) {
+        const existingChannel = this.channels.get(channelName)!;
+        if (existingChannel.state === 'joined') {
+          this.logger.log(`Already joined channel: ${channelName}`);
+          return existingChannel;
+        } else {
+          this.logger.log(`Cleaning up old channel: ${channelName}`);
+          await this.leaveChannel(existingChannel);
+        }
+      }
+
+      // Create a new channel
+      const channel = supabase.channel(channelName);
+
+      // Set up channel listeners before subscribing
       channel
         .on('presence', { event: 'sync' }, () => {
           const state = channel.presenceState();
@@ -47,17 +40,12 @@ export class ChannelManager {
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
           this.logger.log('Presence leave event', { key, leftPresences });
-        })
-        .on('broadcast', { event: 'presence' }, payload => {
-          this.logger.log('Broadcast presence received', payload);
         });
 
-      const status = await channel.subscribe((status, err) => {
-        if (err) {
-          this.logger.error('Channel subscription error:', err);
-        } else {
-          this.logger.log(`Channel status: ${status}`);
-        }
+      // Subscribe to the channel
+      this.logger.log('Subscribing to channel...');
+      const status = await channel.subscribe((status: string) => {
+        this.logger.log(`Channel status changed: ${status}`);
       });
 
       if (status === 'SUBSCRIBED') {
@@ -65,7 +53,8 @@ export class ChannelManager {
         this.channels.set(channelName, channel);
         return channel;
       } else {
-        throw new Error(`Failed to subscribe to channel: ${status}`);
+        this.logger.error(`Failed to subscribe to channel. Status: ${status}`);
+        return null;
       }
     } catch (error) {
       this.logger.error(`Error joining channel: ${channelName}`, error as Error);
@@ -74,33 +63,34 @@ export class ChannelManager {
   }
 
   public async leaveChannel(channel: RealtimeChannel): Promise<void> {
-    const channelId = channel.topic || '';
-    if (this.channels.has(channelId)) {
+    try {
+      const channelId = channel.topic;
       this.logger.log(`Leaving channel: ${channelId}`);
-      try {
+
+      // Remove presence data
+      if (channel.presence) {
         await channel.untrack();
-        await channel.unsubscribe();
-        this.channels.delete(channelId);
-        this.logger.log(`Successfully left channel: ${channelId}`);
-      } catch (error) {
-        this.logger.error(`Error leaving channel: ${channelId}`, error as Error);
       }
+
+      // Unsubscribe from the channel
+      await channel.unsubscribe();
+      
+      // Remove from our channels map
+      this.channels.delete(channelId);
+      
+      this.logger.log(`Successfully left channel: ${channelId}`);
+    } catch (error) {
+      this.logger.error('Error leaving channel:', error as Error);
     }
   }
 
   public getChannelPresence(channel: RealtimeChannel): any {
-    const channelId = channel.topic || '';
-    if (!this.channels.has(channelId)) {
-      this.logger.log(`Channel not found: ${channelId}`);
-      return {};
-    }
-    
     try {
       const state = channel.presenceState();
       this.logger.log('Current presence state:', state);
       return state;
     } catch (error) {
-      this.logger.error(`Error getting presence state for channel: ${channelId}`, error as Error);
+      this.logger.error('Error getting presence state:', error as Error);
       return {};
     }
   }

@@ -49,13 +49,13 @@ export class RealTimeMatchmakingService {
 
   // Join the matchmaking channel
   public async joinMatchmaking(userId: string, username: string): Promise<void> {
-    this.userId = userId;
-    this.username = username;
-    this.user = { id: userId, username };
-    
-    this.debugLogger.log('Joining matchmaking', { userId, username });
-    
     try {
+      this.userId = userId;
+      this.username = username;
+      this.user = { id: userId, username, status: 'waiting' };
+      
+      this.debugLogger.log('Joining matchmaking', { userId, username });
+      
       // Create or join the channel
       this.channel = await this.channelManager.joinChannel(this.channelName);
       
@@ -71,19 +71,6 @@ export class RealTimeMatchmakingService {
         status: 'waiting'
       });
 
-      // Subscribe to presence changes
-      this.channel.on('presence', { event: 'sync' }, () => {
-        this.handlePresenceSync();
-      });
-
-      this.channel.on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        this.handlePresenceJoin(newPresences);
-      });
-
-      this.channel.on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        this.handlePresenceLeave(leftPresences);
-      });
-      
       this.debugLogger.log('Successfully joined matchmaking channel');
       
     } catch (error) {
@@ -155,22 +142,33 @@ export class RealTimeMatchmakingService {
       throw new Error('Not connected to matchmaking channel');
     }
 
-    this.isLookingForMatch = true;
-    
-    // Update status to waiting
-    await this.channel.track({
-      ...this.user,
-      status: 'waiting'
-    });
+    try {
+      this.isLookingForMatch = true;
+      
+      // Update status to waiting
+      await this.channel.track({
+        user_id: this.userId,
+        username: this.username,
+        online_at: new Date().toISOString(),
+        status: 'waiting'
+      });
 
-    // Set a timeout for bot match if enabled
-    if (this._isBotMatchEnabled) {
-      this.matchmakingTimeout = setTimeout(async () => {
-        if (this.isLookingForMatch) {
-          this.debugLogger.log('No human opponent found, creating bot match');
-          await this.createBotMatch();
+      // Set a timeout for bot match if enabled
+      if (this._isBotMatchEnabled) {
+        if (this.matchmakingTimeout) {
+          clearTimeout(this.matchmakingTimeout);
         }
-      }, 30000); // 30 seconds timeout
+        
+        this.matchmakingTimeout = setTimeout(async () => {
+          if (this.isLookingForMatch) {
+            this.debugLogger.log('No human opponent found, creating bot match');
+            await this.createBotMatch();
+          }
+        }, 30000); // 30 seconds timeout
+      }
+    } catch (error) {
+      this.debugLogger.error('Error starting matchmaking', error as Error);
+      throw error;
     }
   }
 
