@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { User } from '@/services/matchmakingService';
-import RealTimeMatchmakingService from '@/services/RealTimeMatchmakingService';
+import { RealTimeMatchmakingService } from '@/services/RealTimeMatchmakingService';
 
 interface BattleArenaProps {
   isDemo?: boolean;

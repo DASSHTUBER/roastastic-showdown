@@ -5,7 +5,7 @@ import UserVideo from './UserVideo';
 import { X, RefreshCw, User, Camera, CameraOff, Wifi, WifiOff } from 'lucide-react';
 import { toast } from "sonner";
 import { User as MatchmakingUser } from '@/services/matchmakingService';
-import RealTimeMatchmakingService from '@/services/RealTimeMatchmakingService';
+import { RealTimeMatchmakingService } from '@/services/RealTimeMatchmakingService';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface UserMatchmakingProps {

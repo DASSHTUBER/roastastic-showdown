@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { User } from '@/services/matchmakingService';
-import RealTimeMatchmakingService from '@/services/RealTimeMatchmakingService';
+import { RealTimeMatchmakingService } from '@/services/RealTimeMatchmakingService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Candy, Play, Heart, Trophy } from 'lucide-react';
 

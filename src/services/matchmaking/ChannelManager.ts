@@ -5,130 +5,92 @@ import { User } from "./types";
 import { DebugLogger } from "./DebugLogger";
 
 export class ChannelManager {
-  private channel: any = null;
-  private channelName: string = 'public-matchmaking';
+  private channels: Map<string, any> = new Map();
   private connectionRetries: number = 0;
   private maxRetries: number = 3;
   private logger: DebugLogger;
 
-  constructor(logger: DebugLogger) {
-    this.logger = logger;
+  constructor(logger?: DebugLogger) {
+    this.logger = logger || new DebugLogger("ChannelManager");
   }
 
-  public getChannel(): any {
-    return this.channel;
-  }
-
-  public setupRealtimeChannel(
-    userId: string, 
-    user: User,
+  public joinChannel(
+    channelName: string,
     onSync: (state: Record<string, any[]>) => void,
-    onJoin: (key: string, newPresences: any[]) => void,
-    onLeave: (key: string) => void,
-    onMatchAccept: (payload: any) => void
-  ): void {
-    // First, clean up any existing channel
-    this.cleanup();
-
+    onJoin: (presence: any) => void,
+    onLeave: (presence: any) => void
+  ): any {
     try {
-      this.connectionRetries = 0;
-      this.setupChannelWithRetry(userId, user, onSync, onJoin, onLeave, onMatchAccept);
-    } catch (error) {
-      console.error('Error setting up realtime channel:', error);
-      toast.error("Failed to connect to matchmaking service");
-    }
-  }
-
-  private setupChannelWithRetry(
-    userId: string, 
-    user: User,
-    onSync: (state: Record<string, any[]>) => void,
-    onJoin: (key: string, newPresences: any[]) => void,
-    onLeave: (key: string) => void,
-    onMatchAccept: (payload: any) => void
-  ): void {
-    if (this.connectionRetries >= this.maxRetries) {
-      toast.error("Failed to connect to matchmaking service after multiple attempts");
-      return;
-    }
-
-    this.connectionRetries++;
-
-    // Use a consistent channel name for all matchmaking users
-    this.logger.log(`Creating/joining channel: ${this.channelName} (Attempt ${this.connectionRetries})`);
-    
-    try {
-      this.channel = supabase.channel(this.channelName, {
+      this.logger.log(`Joining channel: ${channelName}`);
+      
+      // Create the channel if it doesn't exist
+      const channel = supabase.channel(channelName, {
         config: {
           presence: {
-            key: userId,
+            key: channelName,
           },
         },
       });
 
       // Setup presence handlers
-      this.channel
+      channel
         .on('presence', { event: 'sync' }, () => {
           this.logger.log('Presence sync event received');
-          const state = this.channel.presenceState();
+          const state = channel.presenceState();
           this.logger.log('Current presence state:', state);
           
           // Update waitingUsers based on presence state
           onSync(state);
         })
         .on('presence', { event: 'join' }, ({ key, newPresences }: { key: string, newPresences: any[] }) => {
-          onJoin(key, newPresences);
+          if (newPresences && newPresences.length > 0) {
+            onJoin(newPresences[0]);
+          }
         })
-        .on('presence', { event: 'leave' }, ({ key }: { key: string }) => {
-          onLeave(key);
-        })
-        .on('broadcast', { event: 'match_accept' }, (payload: any) => {
-          onMatchAccept(payload);
+        .on('presence', { event: 'leave' }, ({ key, leftPresences }: { key: string, leftPresences: any[] }) => {
+          if (leftPresences && leftPresences.length > 0) {
+            onLeave(leftPresences[0]);
+          }
         });
 
-      // Subscribe to the channel with error handling
-      this.channel.subscribe(async (status: string, err?: any) => {
-        if (status === 'SUBSCRIBED') {
-          // Track our presence once subscribed
-          try {
-            await this.channel.track({
-              userId: userId,
-              username: user.username,
-              avatarUrl: user.avatarUrl,
-              looking: true,
-              joinedAt: new Date().toISOString()
-            });
-            this.logger.log('Successfully joined matchmaking channel');
-            toast.success("Connected to matchmaking service");
-          } catch (trackError) {
-            console.error('Error tracking presence:', trackError);
-            toast.error("Failed to register in matchmaking");
-          }
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          this.logger.log(`Channel error or timeout: ${status}`, err);
-          // Retry connection
-          setTimeout(() => this.setupChannelWithRetry(userId, user, onSync, onJoin, onLeave, onMatchAccept), 2000);
-        } else {
-          this.logger.log('Matchmaking channel subscription status:', status);
-        }
-      });
+      // Store the channel
+      this.channels.set(channelName, channel);
+      
+      return channel;
     } catch (error) {
-      console.error('Error in setupChannelWithRetry:', error);
-      // Retry after delay
-      setTimeout(() => this.setupChannelWithRetry(userId, user, onSync, onJoin, onLeave, onMatchAccept), 2000);
+      this.logger.error('Error joining channel:', error);
+      throw error;
     }
   }
 
-  public cleanup(): void {
-    // Clean up Supabase Realtime channel
-    if (this.channel) {
-      try {
-        this.channel.untrack();
-        supabase.removeChannel(this.channel);
-        this.channel = null;
-      } catch (error) {
-        console.error('Error removing channel:', error);
+  public leaveChannel(channelName: string): void {
+    try {
+      const channel = this.channels.get(channelName);
+      if (channel) {
+        this.logger.log(`Leaving channel: ${channelName}`);
+        
+        // Untrack presence and remove channel
+        channel.untrack();
+        supabase.removeChannel(channel);
+        
+        // Remove from our channels map
+        this.channels.delete(channelName);
       }
+    } catch (error) {
+      this.logger.error('Error leaving channel:', error);
+    }
+  }
+
+  public getChannelPresence(channelName: string): Record<string, any[]> | null {
+    try {
+      const channel = this.channels.get(channelName);
+      if (channel) {
+        return channel.presenceState();
+      }
+      return null;
+    } catch (error) {
+      this.logger.error('Error getting channel presence:', error);
+      return null;
     }
   }
 }

@@ -5,9 +5,9 @@ export class StorageEventService {
   private waitingUsers: Map<string, User>;
   private currentUserId: string | null;
 
-  constructor(waitingUsers: Map<string, User>, currentUserId: string | null) {
-    this.waitingUsers = waitingUsers;
-    this.currentUserId = currentUserId;
+  constructor(waitingUsers?: Map<string, User>, currentUserId?: string | null) {
+    this.waitingUsers = waitingUsers || new Map();
+    this.currentUserId = currentUserId || null;
     this.setupEventListeners();
   }
 
@@ -60,4 +60,29 @@ export class StorageEventService {
   private handleBeforeUnload = (): void => {
     // This is empty as the cleanup will be handled by the main service
   };
+
+  // Add createMatch method
+  public async createMatch(gameType: string, users: any[]): Promise<string> {
+    try {
+      // Generate a unique match ID
+      const matchId = `match_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // In a real implementation, this would save the match to a database
+      // For now, we'll just return the match ID
+      console.log(`Created match with ID ${matchId} for game type ${gameType} with users:`, users);
+      
+      // Store match info in localStorage for persistence
+      localStorage.setItem(`match_${matchId}`, JSON.stringify({
+        id: matchId,
+        gameType,
+        users,
+        createdAt: new Date().toISOString()
+      }));
+      
+      return matchId;
+    } catch (error) {
+      console.error("Error creating match:", error);
+      throw new Error("Failed to create match");
+    }
+  }
 }

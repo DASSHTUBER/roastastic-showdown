@@ -1,5 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { RealtimeChannel, RealtimePresenceState } from '@supabase/supabase-js';
+import { RealtimeChannel } from '@supabase/supabase-js';
 import { ChannelManager } from './matchmaking/ChannelManager';
 import { Presence } from './matchmaking/types';
 import { DebugLogger } from './matchmaking/DebugLogger';
@@ -40,6 +41,7 @@ export type MatchFoundCallback = (matchId: string, users: User[]) => void;
 export type ErrorCallback = (error: Error) => void;
 
 export class RealTimeMatchmakingService {
+  private static instance: RealTimeMatchmakingService;
   private channel: RealtimeChannel | null = null;
   private user: User | null = null;
   private state: MatchmakingState = { status: 'idle' };
@@ -48,19 +50,32 @@ export class RealTimeMatchmakingService {
   private presenceHandler: PresenceHandler;
   private debug: DebugLogger;
   private storageEventService: StorageEventService;
+  private isDebugMode: boolean = false;
 
   private onUserJoinCallback: UserJoinCallback | null = null;
   private onUserLeaveCallback: UserLeaveCallback | null = null;
   private onMatchFoundCallback: MatchFoundCallback | null = null;
   private onErrorCallback: ErrorCallback | null = null;
 
-  constructor() {
-    this.debug = new DebugLogger('RealTimeMatchmakingService');
-    this.channelManager = new ChannelManager(supabase);
-    this.presenceHandler = new PresenceHandler();
+  private constructor() {
+    this.debug = new DebugLogger('RealTimeMatchmakingService', false);
+    this.channelManager = new ChannelManager(this.debug);
+    this.presenceHandler = new PresenceHandler(this.debug);
     this.storageEventService = new StorageEventService();
     
     this.debug.log('Service initialized');
+  }
+
+  public static getInstance(): RealTimeMatchmakingService {
+    if (!RealTimeMatchmakingService.instance) {
+      RealTimeMatchmakingService.instance = new RealTimeMatchmakingService();
+    }
+    return RealTimeMatchmakingService.instance;
+  }
+
+  public setDebugMode(enabled: boolean): void {
+    this.isDebugMode = enabled;
+    this.debug.setDebugMode(enabled);
   }
 
   public setUser(user: User): void {
@@ -138,7 +153,7 @@ export class RealTimeMatchmakingService {
       this.debug.log('Untracked presence');
       await this.channel.unsubscribe();
       this.debug.log('Unsubscribed from channel');
-      this.channelManager.leaveChannel(this.channel.channelId);
+      this.channelManager.leaveChannel(this.channel.topic);
       this.debug.log('Left channel');
     } catch (error) {
       this.handleError(error as Error);
@@ -169,7 +184,7 @@ export class RealTimeMatchmakingService {
   private async handlePresenceSync(): Promise<void> {
     if (!this.channel) return;
 
-    const presence = this.channelManager.getChannelPresence(this.channel.channelId);
+    const presence = this.channelManager.getChannelPresence(this.channel.topic);
     this.debug.log('Handling presence sync:', presence);
 
     if (!presence) return;
@@ -195,7 +210,7 @@ export class RealTimeMatchmakingService {
           userDetails
         );
 
-        this.state = { status: 'matched', matchId, opponents: users as User[] };
+        this.state = { status: 'matched', matchId, opponents: users as unknown as User[] };
         this.debug.log('Match created with ID:', matchId, 'State:', this.state);
         
         if (this.onMatchFoundCallback) {

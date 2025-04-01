@@ -1,8 +1,10 @@
 
 export class DebugLogger {
   private debugMode: boolean;
+  private prefix: string;
 
-  constructor(debugMode: boolean = false) {
+  constructor(prefix: string = "Debug", debugMode: boolean = false) {
+    this.prefix = prefix;
     this.debugMode = debugMode;
   }
 
@@ -13,14 +15,14 @@ export class DebugLogger {
   public log(message: string, data?: any): void {
     if (this.debugMode) {
       if (data) {
-        console.log(`[Matchmaking] ${message}`, data);
+        console.log(`[${this.prefix}] ${message}`, data);
       } else {
-        console.log(`[Matchmaking] ${message}`);
+        console.log(`[${this.prefix}] ${message}`);
       }
     }
   }
 
   public error(message: string, error: any): void {
-    console.error(`[Matchmaking Error] ${message}`, error);
+    console.error(`[${this.prefix} Error] ${message}`, error);
   }
 }
