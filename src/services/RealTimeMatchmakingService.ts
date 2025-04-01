@@ -62,14 +62,24 @@ export class RealTimeMatchmakingService {
       if (!this.channel) {
         throw new Error('Failed to join channel');
       }
+
+      // Wait a bit to ensure channel is ready
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Track presence with user data
-      await this.channel.track({
-        user_id: userId,
-        username: username,
-        online_at: new Date().toISOString(),
-        status: 'waiting'
-      });
+      try {
+        // Track presence with user data
+        await this.channel.track({
+          user_id: userId,
+          username: username,
+          online_at: new Date().toISOString(),
+          status: 'waiting'
+        });
+        
+        this.debugLogger.log('Successfully tracked presence');
+      } catch (trackError) {
+        this.debugLogger.error('Error tracking presence:', trackError);
+        throw trackError;
+      }
 
       this.debugLogger.log('Successfully joined matchmaking channel');
       
@@ -146,12 +156,19 @@ export class RealTimeMatchmakingService {
       this.isLookingForMatch = true;
       
       // Update status to waiting
-      await this.channel.track({
-        user_id: this.userId,
-        username: this.username,
-        online_at: new Date().toISOString(),
-        status: 'waiting'
-      });
+      try {
+        await this.channel.track({
+          user_id: this.userId,
+          username: this.username,
+          online_at: new Date().toISOString(),
+          status: 'waiting'
+        });
+        
+        this.debugLogger.log('Successfully updated status to waiting');
+      } catch (trackError) {
+        this.debugLogger.error('Error updating status:', trackError);
+        throw trackError;
+      }
 
       // Set a timeout for bot match if enabled
       if (this._isBotMatchEnabled) {

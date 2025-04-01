@@ -26,8 +26,14 @@ export class ChannelManager {
         }
       }
 
-      // Create a new channel
-      const channel = supabase.channel(channelName);
+      // Create a new channel with proper configuration
+      const channel = supabase.channel(channelName, {
+        config: {
+          presence: {
+            key: channelName
+          }
+        }
+      });
 
       // Set up channel listeners before subscribing
       channel
@@ -44,16 +50,17 @@ export class ChannelManager {
 
       // Subscribe to the channel
       this.logger.log('Subscribing to channel...');
-      const status = await channel.subscribe((status: string) => {
-        this.logger.log(`Channel status changed: ${status}`);
-      });
+      
+      try {
+        await channel.subscribe((status) => {
+          this.logger.log(`Channel status changed: ${status}`);
+        });
 
-      if (status === 'SUBSCRIBED') {
         this.logger.log('Successfully subscribed to channel');
         this.channels.set(channelName, channel);
         return channel;
-      } else {
-        this.logger.error(`Failed to subscribe to channel. Status: ${status}`);
+      } catch (subscribeError) {
+        this.logger.error('Error subscribing to channel:', subscribeError);
         return null;
       }
     } catch (error) {
@@ -68,12 +75,18 @@ export class ChannelManager {
       this.logger.log(`Leaving channel: ${channelId}`);
 
       // Remove presence data
-      if (channel.presence) {
+      try {
         await channel.untrack();
+      } catch (untrackError) {
+        this.logger.error('Error untracking presence:', untrackError);
       }
 
       // Unsubscribe from the channel
-      await channel.unsubscribe();
+      try {
+        await channel.unsubscribe();
+      } catch (unsubError) {
+        this.logger.error('Error unsubscribing from channel:', unsubError);
+      }
       
       // Remove from our channels map
       this.channels.delete(channelId);
