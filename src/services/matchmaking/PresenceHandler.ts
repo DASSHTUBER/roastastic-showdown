@@ -13,6 +13,10 @@ export class PresenceHandler {
     const users: User[] = [];
     
     try {
+      if (!presenceState || typeof presenceState !== 'object') {
+        return users;
+      }
+      
       Object.keys(presenceState).forEach(key => {
         if (Array.isArray(presenceState[key]) && presenceState[key].length > 0) {
           const presence = presenceState[key][0];
@@ -23,7 +27,7 @@ export class PresenceHandler {
         }
       });
     } catch (error) {
-      this.logger.error('Error getting users from presence', error);
+      this.logger.error('Error getting users from presence', error as Error);
     }
     
     return users;

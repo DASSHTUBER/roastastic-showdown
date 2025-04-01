@@ -11,34 +11,44 @@ export class ChannelManager {
     this.logger = logger;
   }
 
-  public joinChannel(channelName: string, options?: any): RealtimeChannel {
+  public joinChannel(channelName: string, options?: any): RealtimeChannel | null {
     if (this.channels.has(channelName)) {
       this.logger.log(`Reusing existing channel: ${channelName}`);
       return this.channels.get(channelName)!;
     }
 
-    this.logger.log(`Joining channel: ${channelName}`);
-    const channel = supabase.channel(channelName, options);
-    this.channels.set(channelName, channel);
-    return channel;
+    try {
+      this.logger.log(`Joining channel: ${channelName}`);
+      const channel = supabase.channel(channelName, options);
+      this.channels.set(channelName, channel);
+      return channel;
+    } catch (error) {
+      this.logger.error(`Error joining channel: ${channelName}`, error as Error);
+      return null;
+    }
   }
 
-  public leaveChannel(channelId: string): void {
+  public leaveChannel(channel: RealtimeChannel): void {
+    const channelId = channel.topic || '';
     if (this.channels.has(channelId)) {
       this.logger.log(`Leaving channel: ${channelId}`);
-      const channel = this.channels.get(channelId)!;
       channel.unsubscribe();
       this.channels.delete(channelId);
     }
   }
 
-  public getChannelPresence(channelId: string): any {
+  public getChannelPresence(channel: RealtimeChannel): any {
+    const channelId = channel.topic || '';
     if (!this.channels.has(channelId)) {
       this.logger.log(`Channel not found: ${channelId}`);
-      return [];
+      return {};
     }
     
-    const channel = this.channels.get(channelId)!;
-    return channel.presenceState();
+    try {
+      return channel.presenceState();
+    } catch (error) {
+      this.logger.error(`Error getting presence state for channel: ${channelId}`, error as Error);
+      return {};
+    }
   }
 }

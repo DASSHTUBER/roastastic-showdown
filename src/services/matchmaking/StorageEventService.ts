@@ -3,32 +3,33 @@ import { DebugLogger } from './DebugLogger';
 
 export class StorageEventService {
   private logger: DebugLogger;
+  private waitingUsers?: Map<string, any>;
+  private userId?: string | null;
 
-  constructor(logger: DebugLogger) {
+  constructor(logger: DebugLogger, waitingUsers?: Map<string, any>, userId?: string | null) {
     this.logger = logger;
+    this.waitingUsers = waitingUsers;
+    this.userId = userId;
   }
 
-  public createMatch(userId1: string, userId2: string): void {
-    const matchId = `match_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const matchData = {
-      id: matchId,
-      user1Id: userId1,
-      user2Id: userId2,
-      startTime: new Date().toISOString(),
-      status: 'active'
-    };
-
-    // Store the match data in localStorage
-    this.setMatchData(matchId, matchData);
-    
-    this.logger.log(`Created match: ${matchId} between users ${userId1} and ${userId2}`);
+  public cleanup(): void {
+    // Clean up any listeners or resources
+    this.logger.log('StorageEventService cleaned up');
   }
 
-  private setMatchData(matchId: string, data: any): void {
+  public createMatch(userId: string, opponentId: string): void {
     try {
-      localStorage.setItem(`match_${matchId}`, JSON.stringify(data));
+      // Store match information in localStorage for persistence
+      const matchData = {
+        userId,
+        opponentId,
+        timestamp: Date.now()
+      };
+      
+      localStorage.setItem(`match_${userId}_${opponentId}`, JSON.stringify(matchData));
+      this.logger.log(`Match created between ${userId} and ${opponentId}`);
     } catch (error) {
-      this.logger.error('Error storing match data', error);
+      this.logger.error('Error creating match', error as Error);
     }
   }
 }

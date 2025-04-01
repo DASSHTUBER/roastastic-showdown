@@ -2,31 +2,46 @@
 import { User } from './types';
 
 export class BotMatchService {
-  private botMatchEnabled: boolean = false;
-  private botMatchDelayMs: number = 15000; // 15 seconds delay before bot match
   private botMatchTimeout: number | null = null;
+  private botMatchEnabled: boolean = true;
+  private botUsernames: string[] = [
+    'RoastBot3000',
+    'SweetRoaster',
+    'CandyRoaster',
+    'SugarCoatedBurn',
+    'AI_Roastmaster',
+    'CyberRoaster',
+    'SweetToothTroll',
+    'GummyBearRoaster',
+    'LollipopBurner',
+    'BotOfBurns'
+  ];
 
-  constructor() {
-    this.resetBotMatch();
+  public createBotUser(): User {
+    const randomUsername = this.botUsernames[Math.floor(Math.random() * this.botUsernames.length)];
+    
+    return {
+      id: `bot-${Date.now()}`,
+      username: randomUsername,
+      isBot: true
+    };
+  }
+
+  public createBotOpponent(): User {
+    return this.createBotUser();
   }
 
   public resetBotMatch(): void {
-    this.botMatchEnabled = false;
-    if (this.botMatchTimeout) {
-      clearTimeout(this.botMatchTimeout);
-      this.botMatchTimeout = null;
-    }
+    this.clearBotMatchTimeout();
   }
 
-  public setBotMatchTimeout(callback: () => void): void {
-    this.botMatchTimeout = window.setTimeout(() => {
-      this.botMatchEnabled = true;
-      callback();
-    }, this.botMatchDelayMs);
+  public setBotMatchTimeout(callback: () => void, delay: number = 15000): void {
+    this.clearBotMatchTimeout();
+    this.botMatchTimeout = window.setTimeout(callback, delay);
   }
 
   public clearBotMatchTimeout(): void {
-    if (this.botMatchTimeout) {
+    if (this.botMatchTimeout !== null) {
       clearTimeout(this.botMatchTimeout);
       this.botMatchTimeout = null;
     }
@@ -34,14 +49,5 @@ export class BotMatchService {
 
   public isBotMatchEnabled(): boolean {
     return this.botMatchEnabled;
-  }
-
-  public createBotOpponent(): User {
-    return {
-      id: `bot-${Date.now()}`,
-      username: `RoastBot_${Math.floor(Math.random() * 999)}`,
-      avatarUrl: "https://api.dicebear.com/6.x/bottts/svg?seed=roastbattle",
-      isBot: true
-    };
   }
 }

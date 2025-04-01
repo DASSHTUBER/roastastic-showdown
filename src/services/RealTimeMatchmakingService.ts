@@ -9,6 +9,7 @@ import { StorageEventService } from './matchmaking/StorageEventService';
 import { BotMatchService } from './matchmaking/BotMatchService';
 
 export class RealTimeMatchmakingService {
+  private static instance: RealTimeMatchmakingService | null = null;
   private channel: RealtimeChannel | null = null;
   private userStream: MediaStream | null = null;
   private userId: string = '';
@@ -23,13 +24,26 @@ export class RealTimeMatchmakingService {
   private currentOpponent: User | null = null;
   private isMatchmaking: boolean = false;
   private isBotMatchEnabled: boolean = true;
+  private debugMode: boolean = false;
 
-  constructor() {
+  private constructor() {
     this.logger = new DebugLogger('Matchmaking', false);
     this.channelManager = new ChannelManager(this.logger);
     this.presenceHandler = new PresenceHandler(this.logger);
     this.storageEventService = new StorageEventService(this.logger);
     this.botMatchService = new BotMatchService();
+  }
+
+  public static getInstance(): RealTimeMatchmakingService {
+    if (!RealTimeMatchmakingService.instance) {
+      RealTimeMatchmakingService.instance = new RealTimeMatchmakingService();
+    }
+    return RealTimeMatchmakingService.instance;
+  }
+
+  public setDebugMode(enabled: boolean): void {
+    this.debugMode = enabled;
+    this.logger.setDebugMode(enabled);
   }
 
   public initialize(userId: string, username: string): void {
@@ -78,6 +92,8 @@ export class RealTimeMatchmakingService {
       },
     });
 
+    if (!this.channel) return;
+
     this.channel.on('presence', { event: 'sync' }, () => {
       this.handlePresenceSync();
     });
@@ -109,7 +125,7 @@ export class RealTimeMatchmakingService {
     this.noUsersCallbacks = [];
     
     if (this.channel) {
-      this.channelManager.leaveChannel(this.channel.channelId);
+      this.channelManager.leaveChannel(this.channel);
       this.channel = null;
     }
     
@@ -125,7 +141,7 @@ export class RealTimeMatchmakingService {
       return;
     }
 
-    const presences = this.channelManager.getChannelPresence(this.channel.channelId);
+    const presences = this.channelManager.getChannelPresence(this.channel);
     this.logger.log('Current presences', presences);
 
     const users = this.presenceHandler.getUsersFromPresence(presences);
@@ -196,6 +212,10 @@ export class RealTimeMatchmakingService {
     // Implement leaving a battle
     this.currentOpponent = null;
     this.logger.log('Left battle');
+  }
+
+  public isBotMatchEnabled(): boolean {
+    return this.isBotMatchEnabled;
   }
 }
 

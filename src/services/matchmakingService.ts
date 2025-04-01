@@ -1,9 +1,9 @@
-
 import { toast } from "sonner";
 import { User, MatchmakingCallback, NoUsersCallback } from "./matchmaking/types";
 import { generateUserId, broadcastMatchmakingRequest, broadcastCancellation } from "./matchmaking/utils";
 import { BotMatchService } from "./matchmaking/BotMatchService";
 import { StorageEventService } from "./matchmaking/StorageEventService";
+import { DebugLogger } from "./utils/DebugLogger";
 
 class MatchmakingService {
   private static instance: MatchmakingService;
@@ -20,7 +20,7 @@ class MatchmakingService {
 
   private constructor() {
     this.botMatchService = new BotMatchService();
-    this.storageEventService = new StorageEventService(this.waitingUsers, this.userId);
+    this.storageEventService = new StorageEventService(new DebugLogger('StorageEvent', false));
     
     // Initialize BroadcastChannel for cross-device communication if available
     if (typeof BroadcastChannel !== 'undefined') {
@@ -101,7 +101,7 @@ class MatchmakingService {
     if (this.storageEventService) {
       this.storageEventService.cleanup();
     }
-    this.storageEventService = new StorageEventService(this.waitingUsers, this.userId);
+    this.storageEventService = new StorageEventService(new DebugLogger('StorageEvent', false));
     
     return userId;
   }
@@ -302,4 +302,3 @@ class MatchmakingService {
 
 export default MatchmakingService;
 export type { User };
-
