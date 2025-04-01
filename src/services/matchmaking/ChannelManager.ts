@@ -21,35 +21,52 @@ export class ChannelManager {
       const channel = supabase.channel(channelName, {
         config: {
           presence: {
-            key: 'matchmaking',
+            key: channelName,
           },
           broadcast: {
-            self: true
+            self: true,
+            ack: true
+          }
+        },
+        events: {
+          presence: {
+            sync: true,
+            join: true,
+            leave: true
           }
         }
       });
 
       channel
         .on('presence', { event: 'sync' }, () => {
-          this.logger.log('Presence sync event received');
+          const state = channel.presenceState();
+          this.logger.log('Presence sync event received', state);
         })
         .on('presence', { event: 'join' }, ({ key, newPresences }) => {
           this.logger.log('Presence join event', { key, newPresences });
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
           this.logger.log('Presence leave event', { key, leftPresences });
+        })
+        .on('broadcast', { event: 'presence' }, payload => {
+          this.logger.log('Broadcast presence received', payload);
         });
 
-      const status = await channel.subscribe(async (status) => {
-        this.logger.log(`Channel status: ${status}`);
+      const status = await channel.subscribe((status, err) => {
+        if (err) {
+          this.logger.error('Channel subscription error:', err);
+        } else {
+          this.logger.log(`Channel status: ${status}`);
+        }
       });
 
-      if (status !== 'SUBSCRIBED') {
+      if (status === 'SUBSCRIBED') {
+        this.logger.log('Successfully subscribed to channel');
+        this.channels.set(channelName, channel);
+        return channel;
+      } else {
         throw new Error(`Failed to subscribe to channel: ${status}`);
       }
-
-      this.channels.set(channelName, channel);
-      return channel;
     } catch (error) {
       this.logger.error(`Error joining channel: ${channelName}`, error as Error);
       return null;
@@ -60,8 +77,14 @@ export class ChannelManager {
     const channelId = channel.topic || '';
     if (this.channels.has(channelId)) {
       this.logger.log(`Leaving channel: ${channelId}`);
-      await channel.unsubscribe();
-      this.channels.delete(channelId);
+      try {
+        await channel.untrack();
+        await channel.unsubscribe();
+        this.channels.delete(channelId);
+        this.logger.log(`Successfully left channel: ${channelId}`);
+      } catch (error) {
+        this.logger.error(`Error leaving channel: ${channelId}`, error as Error);
+      }
     }
   }
 
