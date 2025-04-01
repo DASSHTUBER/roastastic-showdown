@@ -22,48 +22,59 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/auth" element={<UsernameSetup />} />
-              <Route path="/username-setup" element={<UsernameSetup />} />
-              <Route path="/" element={<Index />} />
-              <Route 
-                path="/battles" 
-                element={
-                  <ProtectedRoute allowAnonymous={true}>
-                    <Battles />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/minigames" 
-                element={
-                  <ProtectedRoute allowAnonymous={true}>
-                    <MiniGames />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/leaderboard" 
-                element={
-                  <ProtectedRoute allowAnonymous={true}>
-                    <Leaderboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/tournaments" 
-                element={
-                  <ProtectedRoute allowAnonymous={true}>
-                    <Tournaments />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+          <div className="candy-theme">
+            <Toaster />
+            <Sonner theme="light" position="top-center" closeButton expand={true} toastOptions={{
+              classNames: {
+                toast: "candy-panel text-white border-white/30",
+                title: "text-white font-bold",
+                description: "text-white/90",
+                actionButton: "candy-button",
+                cancelButton: "bg-white/20 text-white",
+                closeButton: "bg-white/20 text-white"
+              }
+            }} />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/auth" element={<UsernameSetup />} />
+                <Route path="/username-setup" element={<UsernameSetup />} />
+                <Route path="/" element={<Index />} />
+                <Route 
+                  path="/battles" 
+                  element={
+                    <ProtectedRoute allowAnonymous={true}>
+                      <Battles />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/minigames" 
+                  element={
+                    <ProtectedRoute allowAnonymous={true}>
+                      <MiniGames />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/leaderboard" 
+                  element={
+                    <ProtectedRoute allowAnonymous={true}>
+                      <Leaderboard />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/tournaments" 
+                  element={
+                    <ProtectedRoute allowAnonymous={true}>
+                      <Tournaments />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </div>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

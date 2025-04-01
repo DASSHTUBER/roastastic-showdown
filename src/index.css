@@ -5,52 +5,52 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    --background: 330 100% 96%;
+    --foreground: 280 50% 25%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 280 50% 25%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 280 50% 25%;
 
-    --primary: 250 95% 65%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 326 100% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 280 50% 60%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 330 50% 90%;
+    --muted-foreground: 280 30% 40%;
 
-    --accent: 24 100% 65%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 50 100% 60%;
+    --accent-foreground: 280 50% 25%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 100% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 222 84% 70%;
+    --border: 330 50% 85%;
+    --input: 330 50% 85%;
+    --ring: 326 100% 60%;
 
-    --radius: 1rem;
+    --radius: 1.5rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 330 100% 96%;
+    --sidebar-foreground: 280 50% 25%;
+    --sidebar-primary: 326 100% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 280 50% 60%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 330 50% 85%;
+    --sidebar-ring: 326 100% 60%;
     
     /* Gartic Phone Theme Colors */
-    --gartic-purple: 275, 89%, 41%;
-    --gartic-purple-light: 275, 89%, 47%;
-    --gartic-purple-dark: 275, 89%, 30%;
-    --gartic-neon-green: 154, 100%, 50%;
-    --gartic-neon-blue: 195, 100%, 50%;
-    --gartic-accent: 351, 95%, 71%;
+    --gartic-purple: 280 50% 60%;
+    --gartic-purple-light: 280 50% 75%;
+    --gartic-purple-dark: 280 50% 45%;
+    --gartic-neon-green: 100 100% 50%;
+    --gartic-neon-blue: 195 100% 50%;
+    --gartic-accent: 326 100% 60%;
   }
 }
 
@@ -60,9 +60,9 @@
   }
 
   body {
-    @apply bg-[#8023a5] text-foreground antialiased overflow-x-hidden;
+    @apply bg-candy-light-pink text-foreground antialiased overflow-x-hidden;
     font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
-    background-image: url("data:image/svg+xml,%3Csvg width='52' height='26' viewBox='0 0 52 26' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z' /%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ff8abc' fill-opacity='0.1'%3E%3Cpath d='M50 100c27.6 0 50-22.4 50-50S77.6 0 50 0 0 22.4 0 50s22.4 50 50 50zm0-10c22.1 0 40-17.9 40-40S72.1 10 50 10 10 27.9 10 50s17.9 40 40 40z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   }
 
   html {
@@ -72,35 +72,49 @@
 
 @layer utilities {
   .glass {
-    @apply backdrop-blur-xl bg-white/10 border border-white/20 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.1)];
+    @apply backdrop-blur-xl bg-white/20 border border-white/30 shadow-[0_4px_12px_-2px_rgba(255,138,188,0.2)];
   }
   
   .glass-light {
-    @apply backdrop-blur-xl bg-white/90 border border-white/20 shadow-[0_8px_16px_-4px_rgba(0,0,0,0.1)] rounded-2xl;
+    @apply backdrop-blur-xl bg-white/90 border border-white/30 shadow-[0_8px_16px_-4px_rgba(255,138,188,0.2)] rounded-2xl;
   }
   
-  .gartic-container {
-    @apply bg-[#5a2b79]/95 rounded-3xl shadow-lg border-4 border-[#4a2264];
+  .candy-container {
+    @apply bg-gradient-to-br from-candy-pink/95 to-candy-purple/95 rounded-3xl shadow-lg border-4 border-candy-light-pink;
   }
   
-  .gartic-panel {
-    @apply bg-[#4a2264] rounded-xl shadow-md border-2 border-[#421e57];
+  .candy-panel {
+    @apply bg-gradient-to-r from-candy-purple to-candy-bright-pink rounded-xl shadow-md border-2 border-white/30;
   }
   
-  .gartic-button {
-    @apply bg-white rounded-full shadow-md border-2 border-[#e6e6e6] text-[#4a2264] font-bold hover:bg-[#f0f0f0] transition-colors;
+  .candy-button {
+    @apply bg-gradient-to-r from-candy-bright-pink to-candy-purple rounded-full shadow-md border-2 border-white/50 text-white font-bold hover:shadow-candy-hover hover:brightness-110 transition-all;
   }
   
-  .gartic-accent-button {
-    @apply bg-[#00E1A0] rounded-full shadow-md border-2 border-[#00c78c] text-[#4a2264] font-bold hover:bg-[#00c78c] transition-colors;
+  .candy-accent-button {
+    @apply bg-gradient-to-r from-candy-green to-candy-blue rounded-full shadow-md border-2 border-white/50 text-white font-bold hover:shadow-candy-hover hover:brightness-110 transition-all;
+  }
+  
+  .candy-item {
+    @apply rounded-2xl bg-gradient-to-br from-white/90 to-white/70 border-2 border-white/50 shadow-candy p-1;
+  }
+  
+  .candy-stripes {
+    background: repeating-linear-gradient(
+      45deg,
+      theme('colors.candy.light-pink'),
+      theme('colors.candy.light-pink') 20px,
+      theme('colors.candy.light-purple') 20px,
+      theme('colors.candy.light-purple') 40px
+    );
   }
   
   .text-gradient {
-    @apply bg-gradient-to-b from-[#FF5757] to-[#FF9042] bg-clip-text text-transparent;
+    @apply bg-gradient-to-b from-candy-bright-pink to-candy-purple bg-clip-text text-transparent;
   }
   
   .button-gradient {
-    @apply bg-[#FF9042] hover:bg-[#FF5757] transition-all duration-300;
+    @apply bg-candy-orange hover:bg-candy-red transition-all duration-300;
   }
   
   .section-padding {
@@ -108,7 +122,7 @@
   }
   
   .video-container {
-    @apply relative overflow-hidden rounded-xl border-4 border-[#4a2264] shadow-lg;
+    @apply relative overflow-hidden rounded-xl border-4 border-candy-light-pink shadow-lg;
     aspect-ratio: 16 / 9;
   }
   
@@ -121,13 +135,31 @@
   }
   
   .neon-text-green {
-    @apply text-[#00E1A0] font-bold;
-    text-shadow: 0 0 5px rgba(0, 225, 160, 0.7), 0 0 10px rgba(0, 225, 160, 0.5);
+    @apply text-candy-green font-bold;
+    text-shadow: 0 0 5px rgba(126, 217, 87, 0.7), 0 0 10px rgba(126, 217, 87, 0.5);
   }
   
   .neon-text-blue {
-    @apply text-[#00B2E1] font-bold;
-    text-shadow: 0 0 5px rgba(0, 178, 225, 0.7), 0 0 10px rgba(0, 178, 225, 0.5);
+    @apply text-candy-blue font-bold;
+    text-shadow: 0 0 5px rgba(72, 196, 224, 0.7), 0 0 10px rgba(72, 196, 224, 0.5);
+  }
+  
+  .candy-shadow {
+    text-shadow: 2px 2px 0 #FF4090, 4px 4px 0px rgba(160, 102, 211, 0.5);
+  }
+  
+  .candy-title {
+    @apply font-bold text-white candy-shadow;
+  }
+  
+  .candy-border {
+    @apply border-4 border-dashed border-white/50 rounded-2xl p-1;
+  }
+  
+  .candy-dots {
+    background-image: radial-gradient(#FF8ABC 10%, transparent 10%), radial-gradient(#FF8ABC 10%, transparent 10%);
+    background-position: 0 0, 10px 10px;
+    background-size: 20px 20px;
   }
   
   @keyframes float {

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { User } from '@/services/matchmakingService';
 import RealTimeMatchmakingService from '@/services/RealTimeMatchmakingService';
 import { useAuth } from '@/contexts/AuthContext';
+import { Candy, Play, Heart, Trophy } from 'lucide-react';
 
 const Battles = () => {
   const [isMatching, setIsMatching] = useState(false);
@@ -74,7 +75,9 @@ const Battles = () => {
   const startMatchmaking = () => {
     console.log("[Battles] Starting matchmaking");
     setIsMatching(true);
-    toast.info("Looking for a real opponent...");
+    toast.info("Looking for a sweet opponent...", {
+      icon: <Candy className="text-candy-pink" />,
+    });
   };
   
   const cancelMatchmaking = () => {
@@ -87,7 +90,9 @@ const Battles = () => {
     console.log("[Battles] Match found with opponent:", foundOpponent);
     setOpponent(foundOpponent);
     setMatchFound(true);
-    toast.success(`Opponent found: ${foundOpponent.username}! Get ready to roast!`);
+    toast.success(`Sweet opponent found: ${foundOpponent.username}! Get ready to roast!`, {
+      icon: <Heart className="text-candy-bright-pink" />,
+    });
   };
   
   // Force immediate navigation when leaving battle
@@ -114,66 +119,95 @@ const Battles = () => {
       {isLoading ? (
         <div className="h-screen w-full flex items-center justify-center">
           <div className="flex flex-col items-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-white animate-pulse-soft">
-              Roast<span className="text-[#00E1A0]">Battle</span><span className="text-[#FF5757]">!</span>
+            <h1 className="text-4xl md:text-5xl font-bold text-candy-bright-pink animate-pulse-soft candy-shadow">
+              Roast<span className="text-candy-blue">Battle</span><span className="text-candy-green">!</span>
             </h1>
-            <p className="mt-4 text-white/80 animate-pulse-soft">Loading the arena...</p>
+            <p className="mt-4 text-candy-purple animate-pulse-soft">Loading sweet battles...</p>
           </div>
         </div>
       ) : (
         <>
           <Navbar />
           
+          {/* Floating Candy Elements */}
+          <div className="fixed inset-0 pointer-events-none overflow-hidden">
+            {[...Array(8)].map((_, i) => (
+              <div 
+                key={i}
+                className="absolute animate-float"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 5}s`,
+                  animationDuration: `${5 + Math.random() * 10}s`
+                }}
+              >
+                <div 
+                  className="w-6 h-6 md:w-10 md:h-10 rounded-full opacity-60"
+                  style={{
+                    backgroundColor: [
+                      '#FF8ABC', '#A066D3', '#48C4E0',
+                      '#7ED957', '#FFD53F', '#FF9838'
+                    ][i % 6]
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+          
           <section className="pt-28 pb-16 px-6 min-h-screen">
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-8">
-                <h1 className="text-3xl md:text-4xl font-bold text-white">
-                  Live <span className="neon-text-green">Roast</span> Battles
+                <h1 className="text-3xl md:text-4xl font-bold text-white candy-shadow">
+                  Sweet <span className="text-candy-green">Roast</span> Battles
                 </h1>
-                <p className="mt-4 text-white/80 max-w-2xl mx-auto">
-                  Get matched with real opponents and show off your roasting skills while the audience watches and reacts.
+                <p className="mt-4 text-candy-purple max-w-2xl mx-auto">
+                  Get matched with sugar-coated opponents and show off your roasting skills while the audience watches and reacts.
                 </p>
               </div>
               
               {!isMatching && !matchFound ? (
                 <div className="max-w-2xl mx-auto text-center py-12">
                   <div className="animate-scale-in">
-                    <div className="gartic-panel rounded-2xl p-8 mb-6">
-                      <h2 className="text-xl font-semibold mb-4 text-white">Ready to Enter the Arena?</h2>
+                    <div className="candy-panel rounded-2xl p-8 mb-6 relative overflow-hidden">
+                      <div className="absolute -right-12 -top-12 opacity-20">
+                        <Candy className="w-32 h-32 text-white animate-candy-spin" />
+                      </div>
+                      <h2 className="text-xl font-semibold mb-4 text-white candy-shadow">Ready to Enter the Sweet Arena?</h2>
                       <p className="mb-6 text-white/80">
-                        Click below to find a real opponent and start a live roast battle. 
+                        Click below to find a sugar-coated opponent and start a sweet roast battle. 
                         Remember to keep it funny, not hurtful!
                       </p>
                       <Button 
                         onClick={checkMediaPermissions}
-                        className="gartic-accent-button px-8 py-6 text-lg font-medium"
+                        className="candy-button px-8 py-6 text-lg font-medium hover:animate-jelly"
                       >
-                        Start Matchmaking
+                        Start Sweet Matchmaking
                       </Button>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-12">
-                      <div className="gartic-panel rounded-xl p-6">
-                        <h3 className="font-semibold mb-2 text-[#00E1A0]">Battle Rules</h3>
+                      <div className="candy-panel rounded-xl p-6 bg-gradient-to-br from-candy-orange to-candy-red">
+                        <h3 className="font-semibold mb-2 text-candy-yellow">Sweet Battle Rules</h3>
                         <ul className="text-sm text-white/80 text-left list-disc pl-4 space-y-2">
-                          <li>Each battle has 3 rounds</li>
+                          <li>Each battle has 3 sugary rounds</li>
                           <li>Free-form roasting (no turns)</li>
-                          <li>Audience votes for the winner</li>
-                          <li>Keep it witty, not offensive</li>
+                          <li>Candy audience votes for the winner</li>
+                          <li>Keep it sweet, not sour</li>
                         </ul>
                       </div>
                       
-                      <div className="gartic-panel rounded-xl p-6">
-                        <h3 className="font-semibold mb-2 text-[#00E1A0]">Mini Games</h3>
+                      <div className="candy-panel rounded-xl p-6 bg-gradient-to-br from-candy-purple to-candy-bright-pink">
+                        <h3 className="font-semibold mb-2 text-candy-yellow">Candy Mini Games</h3>
                         <p className="text-sm text-white/80 text-left">
-                          Spice up your battle with Truth or Dare, Challenge Wheel, and more interactive games while roasting!
+                          Sweeten up your battle with Truth or Dare, Challenge Wheel, and more interactive candy games while roasting!
                         </p>
                       </div>
                       
-                      <div className="gartic-panel rounded-xl p-6">
-                        <h3 className="font-semibold mb-2 text-[#00E1A0]">Rewards</h3>
+                      <div className="candy-panel rounded-xl p-6 bg-gradient-to-br from-candy-blue to-candy-green">
+                        <h3 className="font-semibold mb-2 text-candy-yellow">Sweet Rewards</h3>
                         <p className="text-sm text-white/80 text-left">
-                          Win battles to climb the leaderboard and earn exclusive emotes, backgrounds, and status badges.
+                          Win battles to climb the candy leaderboard and earn exclusive emotes, backgrounds, and status badges.
                         </p>
                       </div>
                     </div>
@@ -197,11 +231,11 @@ const Battles = () => {
           
           {/* Camera/Mic Permission Dialog */}
           <Dialog open={showPermissionDialog} onOpenChange={setShowPermissionDialog}>
-            <DialogContent className="sm:max-w-md gartic-panel">
+            <DialogContent className="sm:max-w-md candy-panel">
               <DialogHeader>
-                <DialogTitle className="text-white">Camera & Microphone Access</DialogTitle>
+                <DialogTitle className="text-white candy-shadow">Camera & Microphone Access</DialogTitle>
                 <DialogDescription className="text-white/80">
-                  RoastBattle needs access to your camera and microphone to let you participate in live battles. Without these permissions, you won't be able to join a battle.
+                  Sweet RoastBattle needs access to your camera and microphone to let you participate in sugary battles. Without these permissions, you won't be able to join a battle.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -217,7 +251,7 @@ const Battles = () => {
                     checkMediaPermissions();
                     setShowPermissionDialog(false);
                   }}
-                  className="gartic-accent-button"
+                  className="candy-button"
                 >
                   Try Again
                 </Button>
