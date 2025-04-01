@@ -23,7 +23,7 @@ export class ChannelManager {
     userId: string, 
     user: User,
     onSync: (state: Record<string, any[]>) => void,
-    onJoin: (key: string, newPresences: any[], currentUserId: string) => void,
+    onJoin: (key: string, newPresences: any[]) => void,
     onLeave: (key: string) => void,
     onMatchAccept: (payload: any) => void
   ): void {
@@ -43,7 +43,7 @@ export class ChannelManager {
     userId: string, 
     user: User,
     onSync: (state: Record<string, any[]>) => void,
-    onJoin: (key: string, newPresences: any[], currentUserId: string) => void,
+    onJoin: (key: string, newPresences: any[]) => void,
     onLeave: (key: string) => void,
     onMatchAccept: (payload: any) => void
   ): void {
@@ -77,7 +77,7 @@ export class ChannelManager {
           onSync(state);
         })
         .on('presence', { event: 'join' }, ({ key, newPresences }: { key: string, newPresences: any[] }) => {
-          onJoin(key, newPresences, userId);
+          onJoin(key, newPresences);
         })
         .on('presence', { event: 'leave' }, ({ key }: { key: string }) => {
           onLeave(key);

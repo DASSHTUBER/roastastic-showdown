@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { User, MatchmakingCallback, NoUsersCallback } from "./matchmaking/types";
 import { generateUserId } from "./matchmaking/utils";
@@ -80,7 +79,7 @@ class RealTimeMatchmakingService {
       userId, 
       user, 
       (state) => this.updateWaitingUsers(state),
-      (key, newPresences, currentUserId) => this.handleUserJoin(key, newPresences, currentUserId),
+      (key, newPresences) => this.handleUserJoin(key, newPresences),
       (key) => this.handleUserLeave(key),
       (payload) => this.handleMatchAccept(payload, userId)
     );
@@ -114,10 +113,10 @@ class RealTimeMatchmakingService {
     });
   }
 
-  private handleUserJoin(key: string, newPresences: any[], currentUserId: string): void {
+  private handleUserJoin(key: string, newPresences: any[]): void {
     this.logger.log('User joined:', key, newPresences);
     
-    if (key !== currentUserId) {
+    if (key !== this.userId) {
       // Add this user to our waiting pool if they're not already there
       const otherUser = newPresences[0];
       if (otherUser && !this.waitingUsers.has(key)) {
@@ -160,7 +159,7 @@ class RealTimeMatchmakingService {
     }
   }
 
-  private updateWaitingUsers(state: Record<string, any[]>): void {
+  public updateWaitingUsers(state: Record<string, any[]>): void {
     // Log the raw presence state for debugging
     this.logger.log('Raw presence state:', JSON.stringify(state));
     
