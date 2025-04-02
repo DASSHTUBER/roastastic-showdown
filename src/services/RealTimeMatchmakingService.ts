@@ -19,8 +19,8 @@ export class RealTimeMatchmakingService {
   
   private constructor() {
     this.botMatchService = new BotMatchService();
-    this.channelManager = new ChannelManager(DebugLogger);
-    this.presenceHandler = new PresenceHandler(DebugLogger);
+    this.channelManager = new ChannelManager();
+    this.presenceHandler = new PresenceHandler();
   }
 
   // Singleton pattern

@@ -3,10 +3,8 @@ import { DebugLogger } from './DebugLogger';
 import { User } from './types';
 
 export class PresenceHandler {
-  private logger: DebugLogger;
-
-  constructor(logger: DebugLogger) {
-    this.logger = logger;
+  constructor() {
+    // No need to store the logger instance as we're using static methods
   }
 
   public getUsersFromPresence(presenceState: any): User[] {
@@ -27,7 +25,7 @@ export class PresenceHandler {
         }
       });
     } catch (error) {
-      this.logger.error('Error getting users from presence', error as Error);
+      DebugLogger.error('Error getting users from presence', error as Error);
     }
     
     return users;
