@@ -14,14 +14,16 @@ import { Switch } from "@/components/ui/switch";
 import { User } from '@/services/matchmaking/types';
 import { RealTimeMatchmakingService } from '@/services/RealTimeMatchmakingService';
 import ErrorBoundary from './ErrorBoundary';
-
 interface BattleArenaProps {
   isDemo?: boolean;
   opponentData?: User | null;
   onLeave?: () => void;
 }
-
-const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps) => {
+const BattleArena = ({
+  isDemo = false,
+  opponentData,
+  onLeave
+}: BattleArenaProps) => {
   const navigate = useNavigate();
   const [currentRound, setCurrentRound] = useState(1);
   const totalRounds = 3;
@@ -43,7 +45,6 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [cameraToggle, setCameraToggle] = useState(true);
   const [mediaError, setMediaError] = useState<string | null>(null);
-  
   useEffect(() => {
     if (!isDemo) {
       const matchmakingService = RealTimeMatchmakingService.getInstance();
@@ -51,21 +52,21 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
       setCurrentUserId(userId);
     }
   }, [isDemo]);
-  
   useEffect(() => {
     if (!isDemo && !started) {
       setStarted(true);
-      
       if (!isDemo) {
         requestMediaPermissions();
         startMatchmaking();
       }
     }
   }, [isDemo, started]);
-  
   const requestMediaPermissions = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+      });
       setUserStream(stream);
       setMediaError(null);
       toast.success("Camera and microphone access granted!");
@@ -75,44 +76,36 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
       console.error("Media permissions error:", error);
     }
   };
-  
   const startMatchmaking = async () => {
     try {
       const matchmakingService = RealTimeMatchmakingService.getInstance();
       const userId = matchmakingService.getCurrentUserId();
       const username = localStorage.getItem('username') || `User_${userId?.slice(0, 4) || 'anonymous'}`;
-      
       if (userId && username) {
-        await matchmakingService.enterMatchmaking(userId, username, 
-          `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${username}`);
+        await matchmakingService.enterMatchmaking(userId, username, `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${username}`);
       }
     } catch (error) {
       console.error('Error starting matchmaking:', error);
       toast.error('Failed to start matchmaking. Please try again.');
     }
   };
-  
   const toggleCamera = () => {
     setCameraToggle(!cameraToggle);
     if (userStream) {
       const videoTracks = userStream.getVideoTracks();
-      videoTracks.forEach((track) => {
+      videoTracks.forEach(track => {
         track.enabled = !cameraToggle;
       });
     }
     toast.info(`Camera ${!cameraToggle ? 'enabled' : 'disabled'}`);
   };
-  
   const handleRoundComplete = () => {
     setShowVoting(true);
   };
-  
   const handleVoteComplete = (winner: string) => {
     const newRoundWinners = [...roundWinners, winner];
     setRoundWinners(newRoundWinners);
-    
     toast.info(`Round ${currentRound} winner: ${winner}!`);
-    
     if (currentRound < totalRounds) {
       setCurrentRound(currentRound + 1);
     } else {
@@ -120,12 +113,10 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
         counts[winner] = (counts[winner] || 0) + 1;
         return counts;
       }, {});
-      
       const battleWinner = Object.entries(winCounts).sort((a, b) => b[1] - a[1])[0][0];
       setBattleWinner(battleWinner);
       toast.success(`Battle complete! ${battleWinner} wins!`);
       setBattleComplete(true);
-      
       if (isDemo) {
         setTimeout(() => {
           setCurrentRound(1);
@@ -140,39 +131,34 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
         }, 5000);
       }
     }
-    
     setShowVoting(false);
   };
-  
   const toggleMiniGames = () => {
     setShowMiniGames(!showMiniGames);
     if (!showMiniGames) {
       setShowChat(false);
     }
   };
-  
   const handleLeaveBattle = () => {
     setShowLeaveDialog(false);
-    
     const matchmakingService = RealTimeMatchmakingService.getInstance();
     const userId = matchmakingService.getCurrentUserId();
     if (userId) {
       matchmakingService.leaveBattle(userId);
     }
-    
     if (userStream) {
       userStream.getTracks().forEach(track => track.stop());
     }
-    
     if (onLeave) {
       setTimeout(() => {
         onLeave();
       }, 0);
     } else {
-      navigate('/', { replace: true });
+      navigate('/', {
+        replace: true
+      });
     }
   };
-  
   const simulateOpponentExtendRequest = () => {
     if (!isDemo && battleComplete) {
       setOpponentWantsToExtend(true);
@@ -184,11 +170,9 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
       });
     }
   };
-  
   const handleExtendBattle = () => {
     setUserWantsToExtend(true);
     setShowExtendDialog(false);
-    
     if (opponentWantsToExtend) {
       toast.success("Battle extended for 2 more rounds!");
       setCurrentRound(totalRounds + 1);
@@ -196,7 +180,6 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
       setBattleWinner(null);
     } else {
       toast.info("Waiting for opponent to agree...");
-      
       if (!isDemo) {
         setTimeout(() => {
           setOpponentWantsToExtend(true);
@@ -208,34 +191,20 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
       }
     }
   };
-  
   const currentUsername = localStorage.getItem('username') || `User_${currentUserId?.slice(0, 4) || 'anonymous'}`;
-  
-  return (
-    <div className={`w-full max-w-6xl mx-auto gartic-container overflow-hidden p-6 ${isDemo ? 'md:p-8' : 'md:p-10'}`}>
-      {mediaError ? (
-        <div className="flex flex-col items-center justify-center py-12 md:py-16">
+  return <div className={`w-full max-w-6xl mx-auto gartic-container overflow-hidden p-6 ${isDemo ? 'md:p-8' : 'md:p-10'}`}>
+      {mediaError ? <div className="flex flex-col items-center justify-center py-12 md:py-16">
           <h3 className="text-2xl md:text-3xl font-bold mb-6 text-center text-white">Camera Access Required</h3>
           <p className="text-gray-300 mb-6 text-center">{mediaError}</p>
-          <Button 
-            onClick={requestMediaPermissions} 
-            className="gartic-accent-button px-8 py-6 text-lg font-medium"
-          >
+          <Button onClick={requestMediaPermissions} className="gartic-accent-button px-8 py-6 text-lg font-medium">
             Grant Permissions
           </Button>
-        </div>
-      ) : !started && isDemo ? (
-        <div className="flex flex-col items-center justify-center py-12 md:py-16">
+        </div> : !started && isDemo ? <div className="flex flex-col items-center justify-center py-12 md:py-16">
           <h3 className="text-2xl md:text-3xl font-bold mb-6 text-center text-white">Experience a Live Roast Battle</h3>
-          <Button 
-            onClick={() => setStarted(true)} 
-            className="gartic-accent-button px-8 py-6 text-lg font-medium animate-pulse-soft"
-          >
+          <Button onClick={() => setStarted(true)} className="gartic-accent-button px-8 py-6 text-lg font-medium animate-pulse-soft">
             Watch Demo Battle
           </Button>
-        </div>
-      ) : (
-        <>
+        </div> : <>
           <div className="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-6">
             <div className="flex flex-col space-y-6 lg:w-3/4">
               <div className="flex justify-between items-center">
@@ -250,31 +219,18 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  {!isDemo && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="rounded-full hover:bg-white/10 text-white"
-                        onClick={toggleCamera}
-                      >
+                  {!isDemo && <>
+                      <Button variant="outline" size="icon" onClick={toggleCamera} className="rounded-full hover:bg-white/10 text-orange-500">
                         {cameraToggle ? <Camera className="h-4 w-4" /> : <CameraOff className="h-4 w-4" />}
                       </Button>
                       
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-[#FF5757] hover:bg-[#FF5757]/10 hover:text-[#FF5757] flex items-center"
-                        onClick={() => setShowLeaveDialog(true)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => setShowLeaveDialog(true)} className="hover:bg-[#FF5757]/10 flex items-center text-orange-500">
                         <LogOut className="h-4 w-4 mr-1" />
                         Leave
                       </Button>
-                    </>
-                  )}
+                    </>}
                   
-                  {!isDemo && (
-                    <Dialog>
+                  {!isDemo && <Dialog>
                       <DialogTrigger asChild>
                         <Button variant="outline" size="icon" className="rounded-full hover:bg-white/10">
                           <Settings className="h-4 w-4" />
@@ -289,87 +245,47 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
                             <label htmlFor="video-toggle" className="text-sm font-medium text-white">
                               Video
                             </label>
-                            <Switch 
-                              id="video-toggle" 
-                              checked={videoEnabled} 
-                              onCheckedChange={(checked) => {
-                                setVideoEnabled(checked);
-                                toast.info(`Video ${checked ? 'enabled' : 'disabled'}`);
-                              }} 
-                            />
+                            <Switch id="video-toggle" checked={videoEnabled} onCheckedChange={checked => {
+                        setVideoEnabled(checked);
+                        toast.info(`Video ${checked ? 'enabled' : 'disabled'}`);
+                      }} />
                           </div>
                           <div className="flex items-center justify-between">
                             <label htmlFor="audio-toggle" className="text-sm font-medium text-white">
                               Microphone
                             </label>
-                            <Switch 
-                              id="audio-toggle" 
-                              checked={audioEnabled} 
-                              onCheckedChange={(checked) => {
-                                setAudioEnabled(checked);
-                                toast.info(`Microphone ${checked ? 'enabled' : 'disabled'}`);
-                              }}
-                            />
+                            <Switch id="audio-toggle" checked={audioEnabled} onCheckedChange={checked => {
+                        setAudioEnabled(checked);
+                        toast.info(`Microphone ${checked ? 'enabled' : 'disabled'}`);
+                      }} />
                           </div>
                         </div>
                       </DialogContent>
-                    </Dialog>
-                  )}
+                    </Dialog>}
                 </div>
               </div>
               
-              {!battleComplete && (
-                <RoundTimer 
-                  duration={isDemo ? 30 : 60} 
-                  currentRound={currentRound} 
-                  totalRounds={totalRounds} 
-                  onComplete={handleRoundComplete}
-                />
-              )}
+              {!battleComplete && <RoundTimer duration={isDemo ? 30 : 60} currentRound={currentRound} totalRounds={totalRounds} onComplete={handleRoundComplete} />}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-10 relative">
-                <UserVideo 
-                  username={isDemo ? "JokeSlayer42" : currentUsername} 
-                  isCurrentUser={true} 
-                  videoEnabled={videoEnabled && cameraToggle}
-                  audioEnabled={audioEnabled}
-                  onLeave={() => setShowLeaveDialog(true)}
-                  avatarUrl="https://randomuser.me/api/portraits/women/44.jpg"
-                  className="z-10"
-                  stream={userStream || undefined}
-                />
-                <UserVideo 
-                  username={opponentUsername}
-                  avatarUrl="https://randomuser.me/api/portraits/men/32.jpg"
-                  className="z-10"
-                  stream={opponentData?.stream}
-                />
+                <UserVideo username={isDemo ? "JokeSlayer42" : currentUsername} isCurrentUser={true} videoEnabled={videoEnabled && cameraToggle} audioEnabled={audioEnabled} onLeave={() => setShowLeaveDialog(true)} avatarUrl="https://randomuser.me/api/portraits/women/44.jpg" className="z-10" stream={userStream || undefined} />
+                <UserVideo username={opponentUsername} avatarUrl="https://randomuser.me/api/portraits/men/32.jpg" className="z-10" stream={opponentData?.stream} />
               </div>
               
               <div className="flex justify-between items-center">
                 <AudienceReactions />
                 
                 <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={`rounded-full ${showMiniGames ? 'bg-[#00E1A0]/10 text-[#00E1A0] border-[#00E1A0]/20' : 'text-white hover:bg-white/10'} transition-colors`}
-                    onClick={toggleMiniGames}
-                  >
+                  <Button variant="outline" size="sm" className={`rounded-full ${showMiniGames ? 'bg-[#00E1A0]/10 text-[#00E1A0] border-[#00E1A0]/20' : 'text-white hover:bg-white/10'} transition-colors`} onClick={toggleMiniGames}>
                     🎮 Mini Games
                   </Button>
                   
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={`rounded-full ${showChat ? 'bg-[#FF5757]/10 text-[#FF5757] border-[#FF5757]/20' : 'text-white hover:bg-white/10'} transition-colors`}
-                    onClick={() => {
-                      setShowChat(!showChat);
-                      if (!showChat) {
-                        setShowMiniGames(false);
-                      }
-                    }}
-                  >
+                  <Button variant="outline" size="sm" className={`rounded-full ${showChat ? 'bg-[#FF5757]/10 text-[#FF5757] border-[#FF5757]/20' : 'text-white hover:bg-white/10'} transition-colors`} onClick={() => {
+                setShowChat(!showChat);
+                if (!showChat) {
+                  setShowMiniGames(false);
+                }
+              }}>
                     <MessageCircle className="h-4 w-4 mr-2" />
                     {showChat ? 'Hide Chat' : 'Show Chat'}
                   </Button>
@@ -377,62 +293,36 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
               </div>
               
               <div className="flex justify-between items-center">
-                {battleComplete ? (
-                  <span className="text-sm font-medium text-[#00E1A0]">
+                {battleComplete ? <span className="text-sm font-medium text-[#00E1A0]">
                     Battle completed! Winner: {battleWinner}
-                  </span>
-                ) : (
-                  <span className="text-sm text-white/80">
+                  </span> : <span className="text-sm text-white/80">
                     {isDemo ? 'Demo mode' : 'Free-form roasting! Just speak when you have something to say.'}
-                  </span>
-                )}
+                  </span>}
                 
-                {!isDemo && battleComplete && (
-                  <Button 
-                    className="gartic-accent-button flex items-center" 
-                    onClick={() => setShowExtendDialog(true)}
-                  >
+                {!isDemo && battleComplete && <Button className="gartic-accent-button flex items-center" onClick={() => setShowExtendDialog(true)}>
                     <Clock className="h-4 w-4 mr-2" />
                     Extend Battle
-                  </Button>
-                )}
+                  </Button>}
                 
-                {!isDemo && !battleComplete && (
-                  <div className="flex space-x-3">
-                    <Button 
-                      className="gartic-accent-button"
-                    >
+                {!isDemo && !battleComplete && <div className="flex space-x-3">
+                    <Button className="gartic-accent-button">
                       Ready to Roast
                     </Button>
-                  </div>
-                )}
+                  </div>}
               </div>
             </div>
             
-            {showChat && (
-              <div className="lg:w-1/4 h-full">
+            {showChat && <div className="lg:w-1/4 h-full">
                 <ChatPanel isDemo={isDemo} opponentName={opponentUsername} />
-              </div>
-            )}
+              </div>}
             
-            {showMiniGames && (
-              <div className="lg:w-1/4 h-full">
+            {showMiniGames && <div className="lg:w-1/4 h-full">
                 <MiniGames isDemo={isDemo} />
-              </div>
-            )}
+              </div>}
           </div>
-        </>
-      )}
+        </>}
       
-      <AudienceVoting
-        isOpen={showVoting}
-        onClose={() => setShowVoting(false)}
-        onVoteComplete={handleVoteComplete}
-        currentRound={currentRound}
-        user1={isDemo ? "JokeSlayer42" : currentUsername}
-        user2={opponentUsername}
-        isDemo={isDemo}
-      />
+      <AudienceVoting isOpen={showVoting} onClose={() => setShowVoting(false)} onVoteComplete={handleVoteComplete} currentRound={currentRound} user1={isDemo ? "JokeSlayer42" : currentUsername} user2={opponentUsername} isDemo={isDemo} />
       
       <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
         <DialogContent className="sm:max-w-md gartic-panel">
@@ -446,11 +336,7 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
             <Button variant="outline" onClick={() => setShowLeaveDialog(false)} className="text-white border-white/20">
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleLeaveBattle}
-              className="bg-[#FF5757] hover:bg-[#FF5757]/80"
-            >
+            <Button variant="destructive" onClick={handleLeaveBattle} className="bg-[#FF5757] hover:bg-[#FF5757]/80">
               Leave Battle
             </Button>
           </DialogFooter>
@@ -462,35 +348,24 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
           <DialogHeader>
             <DialogTitle className="text-white">Extend Battle</DialogTitle>
             <DialogDescription className="text-white/80">
-              {opponentWantsToExtend 
-                ? "Your opponent wants to extend the battle for 2 more rounds. Would you like to continue?" 
-                : "Would you like to extend this battle for 2 more rounds?"}
+              {opponentWantsToExtend ? "Your opponent wants to extend the battle for 2 more rounds. Would you like to continue?" : "Would you like to extend this battle for 2 more rounds?"}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex sm:justify-between">
             <Button variant="outline" onClick={() => setShowExtendDialog(false)} className="text-white border-white/20">
               Decline
             </Button>
-            <Button 
-              variant="default" 
-              className="gartic-accent-button"
-              onClick={handleExtendBattle}
-            >
+            <Button variant="default" className="gartic-accent-button" onClick={handleExtendBattle}>
               Extend Battle
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>;
 };
-
 const BattleArenaWithErrorBoundary = (props: BattleArenaProps) => {
-  return (
-    <ErrorBoundary>
+  return <ErrorBoundary>
       <BattleArena {...props} />
-    </ErrorBoundary>
-  );
+    </ErrorBoundary>;
 };
-
 export default BattleArenaWithErrorBoundary;
