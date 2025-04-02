@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from "@/components/ui/button";
-import { Trophy, ArrowRight, Users, Bell, Play, Gamepad2, Candy } from 'lucide-react';
+import { Trophy, Play, Gamepad2, Candy } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
@@ -27,7 +27,7 @@ const Index = () => {
             <h1 className="text-4xl md:text-5xl font-bold text-candy-bright-pink animate-pulse-soft candy-shadow">
               Roast<span className="text-candy-blue">Battle</span>
             </h1>
-            <p className="mt-4 text-candy-purple animate-pulse-soft">Loading sweet battles...</p>
+            <p className="mt-4 text-candy-purple animate-pulse-soft">Loading battles...</p>
           </div>
         </div>
       ) : (
@@ -67,7 +67,7 @@ const Index = () => {
               <div className="flex flex-col items-center text-center">
                 <div className="mb-10 relative">
                   <img 
-                    src="/lovable-uploads/1434daba-c739-4933-9b31-90d80c0eca18.png" 
+                    src="/lovable-uploads/455208fd-4cba-44fa-b843-3b6fe94b981b.png" 
                     alt="RoastBattle Logo" 
                     className="w-full max-w-[400px] mx-auto filter drop-shadow-lg"
                   />
@@ -86,7 +86,7 @@ const Index = () => {
                     </h2>
                     <div className="mb-6 text-center">
                       <h3 className="text-center text-white mb-4">
-                        Ready for a sweet battle of words?
+                        Ready for a hot battle of words?
                       </h3>
                     </div>
                     <Button 
@@ -107,21 +107,21 @@ const Index = () => {
                       <div className="bg-white/10 rounded-xl p-4 transform hover:scale-105 transition-transform">
                         <h3 className="font-bold text-white mb-2">1. JOIN BATTLE</h3>
                         <p className="text-white/80 text-sm">
-                          Enter the sweet arena and prepare to face your opponent
+                          Enter the fiery arena and prepare to face your opponent
                         </p>
                       </div>
                       
                       <div className="bg-white/10 rounded-xl p-4 transform hover:scale-105 transition-transform">
                         <h3 className="font-bold text-white mb-2">2. TIME TO ROAST</h3>
                         <p className="text-white/80 text-sm">
-                          Each player takes turns delivering sugary comebacks
+                          Each player takes turns delivering spicy comebacks
                         </p>
                       </div>
                       
                       <div className="bg-white/10 rounded-xl p-4 transform hover:scale-105 transition-transform">
                         <h3 className="font-bold text-white mb-2">3. AUDIENCE VOTES</h3>
                         <p className="text-white/80 text-sm">
-                          The audience decides who delivered the sweetest roasts
+                          The audience decides who delivered the hottest roasts
                         </p>
                       </div>
                     </div>
@@ -145,7 +145,7 @@ const Index = () => {
                     onClick={() => navigate('/tournaments')}
                   >
                     <Trophy className="h-5 w-5 mr-2" />
-                    Sweet Tournaments
+                    Hot Tournaments
                   </Button>
                   
                   <Button 
@@ -153,7 +153,7 @@ const Index = () => {
                     onClick={() => navigate('/minigames')}
                   >
                     <Gamepad2 className="h-5 w-5 mr-2" />
-                    Candy Games
+                    Fire Games
                   </Button>
                 </div>
               </div>
