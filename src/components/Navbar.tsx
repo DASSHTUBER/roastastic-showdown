@@ -24,7 +24,7 @@ const Navbar = () => {
     navigate('/auth');
   };
   return <nav className="bg-orange-500">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="max-w-7xl mx-auto flex items-center justify-between bg-transparent">
         <Link to="/" className="flex items-center gap-2">
           <span className="text-white font-bold text-2xl tracking-tight">
             RoastBattle
