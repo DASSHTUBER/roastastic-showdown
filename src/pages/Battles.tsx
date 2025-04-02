@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -83,6 +82,14 @@ const Battles = () => {
   const cancelMatchmaking = () => {
     console.log("[Battles] Cancelling matchmaking");
     setIsMatching(false);
+    
+    // Make sure to call the service to cancel matchmaking
+    const matchmakingService = RealTimeMatchmakingService.getInstance();
+    const userId = matchmakingService.getCurrentUserId();
+    if (userId) {
+      matchmakingService.cancelMatchmaking(userId);
+    }
+    
     toast.info("Matchmaking cancelled");
   };
   

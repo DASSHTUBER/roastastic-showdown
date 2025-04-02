@@ -1,18 +1,13 @@
 
 export class DebugLogger {
-  private debugMode: boolean;
-  private prefix: string;
+  private static debugMode: boolean = true;
+  private static prefix: string = "Matchmaking";
 
-  constructor(prefix: string = "Debug", debugMode: boolean = false) {
-    this.prefix = prefix;
-    this.debugMode = debugMode;
-  }
-
-  public setDebugMode(enabled: boolean): void {
+  public static setDebugMode(enabled: boolean): void {
     this.debugMode = enabled;
   }
 
-  public log(message: string, data?: any): void {
+  public static log(message: string, data?: any): void {
     if (this.debugMode) {
       if (data) {
         console.log(`[${this.prefix}] ${message}`, data);
@@ -22,7 +17,11 @@ export class DebugLogger {
     }
   }
 
-  public error(message: string, error: any): void {
+  public static error(message: string, error: any): void {
     console.error(`[${this.prefix} Error] ${message}`, error);
+  }
+
+  public static warn(message: string, data?: any): void {
+    console.warn(`[${this.prefix} Warning] ${message}`, data ? data : '');
   }
 }

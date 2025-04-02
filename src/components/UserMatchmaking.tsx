@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { User } from '@/services/matchmakingService';
+import { User } from '@/services/matchmaking/types';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,7 +9,7 @@ import { matchmakingService } from '@/services/matchmakingService';
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface UserMatchmakingProps {
-  onCancel?: () => void;
+  onCancel: () => void;
   onMatchFound: (opponent: User) => void;
 }
 
@@ -20,6 +21,29 @@ const UserMatchmaking: React.FC<UserMatchmakingProps> = ({ onCancel, onMatchFoun
   const { username, user } = useAuth();
   
   useEffect(() => {
+    // Start matchmaking when component mounts
+    const startMatchmaking = async () => {
+      if (user?.id) {
+        const userDisplayName = username || `User_${user.id.substring(0, 4)}`;
+        // Register callback for match notifications
+        matchmakingService.onMatchFound(user.id, (opponent) => {
+          if (opponent) {
+            onMatchFound(opponent);
+            setIsSearching(false);
+          }
+        });
+        
+        // Enter matchmaking queue
+        await matchmakingService.enterMatchmaking(
+          user.id, 
+          userDisplayName, 
+          `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${userDisplayName}`
+        );
+      }
+    };
+    
+    startMatchmaking();
+    
     // Start progress animation
     const progressInterval = setInterval(() => {
       setProgress(prev => {
@@ -53,31 +77,23 @@ const UserMatchmaking: React.FC<UserMatchmakingProps> = ({ onCancel, onMatchFoun
       setMatchmakingMessage(randomMessage);
     }, 4000);
     
-    // Simulate finding a match after some time (for demo purposes)
-    // In a real app, this would be replaced with actual matchmaking logic
-    const matchTimeout = setTimeout(() => {
-      const mockOpponent: User = {
-        id: 'opponent-123',
-        username: 'CandyCrusher42',
-        avatarUrl: 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Felix',
-        status: 'online',
-        rating: 1200
-      };
-      
-      onMatchFound(mockOpponent);
-      setIsSearching(false);
-    }, 8000);
-    
     // Clean up intervals and timeouts
     return () => {
       clearInterval(progressInterval);
       clearInterval(searchTimeInterval);
       clearInterval(messageInterval);
-      clearTimeout(matchTimeout);
+      
+      // Cancel matchmaking when component unmounts
+      if (user?.id) {
+        matchmakingService.cancelMatchmaking(user.id);
+      }
     };
-  }, [onMatchFound]);
+  }, [onMatchFound, user, username]);
   
   const handleCancel = () => {
+    if (user?.id) {
+      matchmakingService.cancelMatchmaking(user.id);
+    }
     if (onCancel) {
       onCancel();
     }

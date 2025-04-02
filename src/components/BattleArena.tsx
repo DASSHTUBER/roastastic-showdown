@@ -83,8 +83,8 @@ const BattleArena = ({ isDemo = false, opponentData, onLeave }: BattleArenaProps
       const username = localStorage.getItem('username') || `User_${userId?.slice(0, 4) || 'anonymous'}`;
       
       if (userId && username) {
-        await matchmakingService.joinMatchmaking(userId, username);
-        await matchmakingService.startMatchmaking();
+        await matchmakingService.enterMatchmaking(userId, username, 
+          `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${username}`);
       }
     } catch (error) {
       console.error('Error starting matchmaking:', error);
