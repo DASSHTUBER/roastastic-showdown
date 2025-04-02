@@ -1,298 +1,142 @@
-import { createClient, RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { ChannelManager } from './matchmaking/ChannelManager';
-import { User } from './matchmaking/types';
-import { PresenceHandler } from './matchmaking/PresenceHandler';
-import { StorageEventService } from './matchmaking/StorageEventService';
 import { DebugLogger } from './matchmaking/DebugLogger';
-import { BotMatchService } from './matchmaking/BotMatchService';
-
-// Singleton instance
-let instance: RealTimeMatchmakingService | null = null;
 
 export class RealTimeMatchmakingService {
-  private debugLogger: DebugLogger;
-  private channelManager: ChannelManager;
-  private presenceHandler: PresenceHandler;
-  private storageService: StorageEventService;
-  private botMatchService: BotMatchService;
-  private channel: RealtimeChannel | null = null;
-  private channelName: string = 'matchmaking';
-  private user: User | null = null;
-  private userId: string | null = null;
-  private username: string | null = null;
-  private _isBotMatchEnabled: boolean = false;
-  private matchmakingTimeout: NodeJS.Timeout | null = null;
-  private isLookingForMatch: boolean = false;
-  
-  // Private constructor for Singleton pattern
-  private constructor() {
-    this.debugLogger = new DebugLogger(true);
-    this.channelManager = new ChannelManager(this.debugLogger);
-    this.presenceHandler = new PresenceHandler(this.debugLogger);
-    this.storageService = new StorageEventService(this.debugLogger);
-    this.botMatchService = new BotMatchService();
-  }
-  
-  // Get singleton instance
+  private static instance: RealTimeMatchmakingService;
+  private isInitialized: boolean = false;
+  private matchmakingQueue: string[] = [];
+  private battleRooms: { [userId: string]: string } = {};
+  private userListeners: { [userId: string]: (opponentId: string | null) => void } = {};
+
+  // Singleton pattern
   public static getInstance(): RealTimeMatchmakingService {
-    if (!instance) {
-      instance = new RealTimeMatchmakingService();
+    if (!RealTimeMatchmakingService.instance) {
+      RealTimeMatchmakingService.instance = new RealTimeMatchmakingService();
     }
-    return instance;
+    return RealTimeMatchmakingService.instance;
   }
 
-  // Initialize the service
-  public initialize(): void {
-    this.debugLogger.log('Initializing RealTimeMatchmakingService');
-  }
-
-  // Join the matchmaking channel
-  public async joinMatchmaking(userId: string, username: string): Promise<void> {
-    try {
-      this.userId = userId;
-      this.username = username;
-      this.user = { id: userId, username, status: 'waiting' };
-      
-      this.debugLogger.log('Joining matchmaking', { userId, username });
-      
-      // Create or join the channel
-      this.channel = await this.channelManager.joinChannel(this.channelName);
-      
-      if (!this.channel) {
-        throw new Error('Failed to join channel');
-      }
-
-      // Wait a bit to ensure channel is ready
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      try {
-        // Track presence with user data
-        await this.channel.track({
-          user_id: userId,
-          username: username,
-          online_at: new Date().toISOString(),
-          status: 'waiting'
-        });
-        
-        this.debugLogger.log('Successfully tracked presence');
-      } catch (trackError) {
-        this.debugLogger.error('Error tracking presence:', trackError);
-        throw trackError;
-      }
-
-      this.debugLogger.log('Successfully joined matchmaking channel');
-      
-    } catch (error) {
-      this.debugLogger.error('Error joining matchmaking', error as Error);
-      throw error;
-    }
-  }
-
-  private handlePresenceSync() {
-    if (!this.channel) return;
-    
-    const presenceState = this.channelManager.getChannelPresence(this.channel);
-    const onlineUsers = this.presenceHandler.getUsersFromPresence(presenceState);
-    
-    if (this.isLookingForMatch) {
-      this.findMatch(onlineUsers);
-    }
-  }
-
-  private handlePresenceJoin(newPresences: any[]) {
-    if (!this.isLookingForMatch) return;
-    
-    const onlineUsers = this.presenceHandler.getUsersFromPresence(
-      this.channelManager.getChannelPresence(this.channel!)
-    );
-    
-    this.findMatch(onlineUsers);
-  }
-
-  private handlePresenceLeave(leftPresences: any[]) {
-    // Handle user leaving if needed
-  }
-
-  private async findMatch(onlineUsers: User[]) {
-    if (!this.user || !this.userId) return;
-
-    // Filter out current user and find available opponents
-    const availableOpponents = onlineUsers.filter(
-      user => user.id !== this.userId && user.status === 'waiting'
-    );
-
-    if (availableOpponents.length > 0) {
-      // Select the first available opponent
-      const opponent = availableOpponents[0];
-      
-      // Update status to matched
-      await this.channel?.track({
-        ...this.user,
-        status: 'matched',
-        opponent_id: opponent.id
-      });
-
-      // Create the match
-      const matchId = await this.createMatch(opponent.id);
-      this.debugLogger.log('Match created', { matchId, opponent });
-      
-      // Stop looking for matches
-      this.isLookingForMatch = false;
-      if (this.matchmakingTimeout) {
-        clearTimeout(this.matchmakingTimeout);
-        this.matchmakingTimeout = null;
-      }
-    }
-  }
-
-  // Start looking for a match
-  public async startMatchmaking(): Promise<void> {
-    if (!this.channel || !this.user) {
-      throw new Error('Not connected to matchmaking channel');
+  public initialize(debug: boolean = false): void {
+    if (this.isInitialized) {
+      DebugLogger.log("Matchmaking service already initialized.");
+      return;
     }
 
-    try {
-      this.isLookingForMatch = true;
-      
-      // Update status to waiting
-      try {
-        await this.channel.track({
-          user_id: this.userId,
-          username: this.username,
-          online_at: new Date().toISOString(),
-          status: 'waiting'
-        });
-        
-        this.debugLogger.log('Successfully updated status to waiting');
-      } catch (trackError) {
-        this.debugLogger.error('Error updating status:', trackError);
-        throw trackError;
-      }
+    const debugMode = debug ? 'true' : 'false';
 
-      // Set a timeout for bot match if enabled
-      if (this._isBotMatchEnabled) {
-        if (this.matchmakingTimeout) {
-          clearTimeout(this.matchmakingTimeout);
+    supabase
+      .channel('roast_battle_matchmaking')
+      .on('presence', { event: 'sync' }, () => {
+        const presenceState = supabase.channel('roast_battle_matchmaking').presenceState();
+        DebugLogger.log("Presence sync:", presenceState);
+      })
+      .on('presence', { event: 'join' }, (payload) => {
+        DebugLogger.log("User joined:", payload);
+      })
+      .on('presence', { event: 'leave' }, (payload) => {
+        DebugLogger.log("User left:", payload);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          DebugLogger.log("Successfully subscribed to the matchmaking channel.");
+          await supabase.presence.track({ status: 'online' });
+          this.isInitialized = true;
+        } else {
+          DebugLogger.error(`Subscription error: ${status}`);
         }
-        
-        this.matchmakingTimeout = setTimeout(async () => {
-          if (this.isLookingForMatch) {
-            this.debugLogger.log('No human opponent found, creating bot match');
-            await this.createBotMatch();
-          }
-        }, 30000); // 30 seconds timeout
-      }
-    } catch (error) {
-      this.debugLogger.error('Error starting matchmaking', error as Error);
-      throw error;
-    }
+      });
   }
 
-  // Leave the matchmaking channel
-  public async leaveMatchmaking(): Promise<void> {
-    if (!this.channel) {
-      this.debugLogger.log('No active channel to leave');
+  public async enterMatchmaking(userId: string, username: string, avatarUrl?: string): Promise<void> {
+    DebugLogger.log(`User ${userId} entering matchmaking queue.`);
+
+    // Check if the user is already in the queue
+    if (this.matchmakingQueue.includes(userId)) {
+      DebugLogger.log(`User ${userId} is already in the matchmaking queue.`);
       return;
     }
-    
-    try {
-      if (this.matchmakingTimeout) {
-        clearTimeout(this.matchmakingTimeout);
-        this.matchmakingTimeout = null;
-      }
-      
-      await this.channelManager.leaveChannel(this.channel);
-      this.channel = null;
-      this.userId = null;
-      this.username = null;
-      this.user = null;
-      this.isLookingForMatch = false;
-      this.debugLogger.log('Left matchmaking channel');
-    } catch (error) {
-      this.debugLogger.error('Error leaving matchmaking', error as Error);
-    }
+
+    this.matchmakingQueue.push(userId);
+    DebugLogger.log(`User ${userId} added to matchmaking queue. Current queue: ${this.matchmakingQueue}`);
+
+    // Attempt to find a match immediately
+    await this.attemptMatch(userId, username, avatarUrl);
   }
 
-  // Get all users in the matchmaking system
-  public async getOnlineUsers(): Promise<User[]> {
-    if (!this.channel) {
-      this.debugLogger.log('Not connected to matchmaking channel');
-      return [];
-    }
-    
-    try {
-      const presenceState = await this.channelManager.getChannelPresence(this.channel);
-      
-      if (!presenceState) {
-        return [];
-      }
-      
-      return this.presenceHandler.getUsersFromPresence(presenceState);
-    } catch (error) {
-      this.debugLogger.error('Error getting online users', error as Error);
-      return [];
-    }
-  }
-
-  // Create a match with another user
-  public async createMatch(opponentId: string): Promise<string> {
-    if (!this.user || !this.userId) {
-      throw new Error('User not initialized');
-    }
-    
-    try {
-      return await this.storageService.createMatch(this.userId, opponentId);
-    } catch (error) {
-      this.debugLogger.error('Error creating match', error as Error);
-      throw error;
-    }
-  }
-
-  // Enable or disable bot matches
-  public enableBotMatch(enable: boolean): void {
-    this._isBotMatchEnabled = enable;
-    this.debugLogger.log(`Bot matching ${enable ? 'enabled' : 'disabled'}`);
-  }
-  
-  // Check if bot matching is enabled
-  public isBotMatchEnabled(): boolean {
-    return this._isBotMatchEnabled;
-  }
-  
-  // Get the current user ID
-  public getCurrentUserId(): string | null {
-    return this.userId;
-  }
-  
-  // Leave the current battle
-  public async leaveBattle(userId: string): Promise<void> {
-    if (!this.channel) {
-      this.debugLogger.log('No active channel to leave');
+  private async attemptMatch(userId: string, username: string, avatarUrl?: string): Promise<void> {
+    if (this.matchmakingQueue.length < 2) {
+      DebugLogger.log(`Not enough users in queue to form a match. Current queue length: ${this.matchmakingQueue.length}`);
       return;
     }
-    
-    try {
-      await this.leaveMatchmaking();
-      this.debugLogger.log(`User ${userId} left the battle`);
-    } catch (error) {
-      this.debugLogger.error('Error leaving battle', error as Error);
-      throw error;
+
+    const opponentId = this.matchmakingQueue.find(id => id !== userId);
+
+    if (!opponentId) {
+      DebugLogger.log(`No suitable opponent found for user ${userId} at this time.`);
+      return;
+    }
+
+    // Remove both users from the queue before creating the battle room
+    this.matchmakingQueue = this.matchmakingQueue.filter(id => id !== userId && id !== opponentId);
+
+    // Create a unique room ID for the battle
+    const roomId = `battle_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+
+    // Assign both users to the same battle room
+    this.battleRooms[userId] = roomId;
+    this.battleRooms[opponentId] = roomId;
+
+    DebugLogger.log(`Match found! User ${userId} and user ${opponentId} assigned to room ${roomId}.`);
+
+    // Notify both users that a match has been found
+    this.notifyMatchFound(userId, opponentId, username, avatarUrl);
+    this.notifyMatchFound(opponentId, userId, username, avatarUrl);
+  }
+
+  private notifyMatchFound(userId: string, opponentId: string, username: string, avatarUrl?: string): void {
+    if (this.userListeners[userId]) {
+      this.userListeners[userId](opponentId);
+      DebugLogger.log(`Match notification sent to user ${userId} for opponent ${opponentId}.`);
+    } else {
+      DebugLogger.warn(`No listener found for user ${userId}. Match notification skipped.`);
     }
   }
+
+  public onMatchFound(userId: string, callback: (opponentId: string | null) => void): void {
+    this.userListeners[userId] = callback;
+    DebugLogger.log(`Listener registered for user ${userId}.`);
+  }
+
+  public cancelMatchmaking(userId: string): void {
+    DebugLogger.log(`Cancelling matchmaking for user ${userId}`);
+    this.matchmakingQueue = this.matchmakingQueue.filter(id => id !== userId);
+    delete this.battleRooms[userId];
+    delete this.userListeners[userId];
+  }
+
+  public someMethodThatShouldReturnString(): string {
+    return 'success';
+  }
   
-  // Create a match with a bot
-  public async createBotMatch(): Promise<string> {
-    if (!this.user || !this.userId) {
-      throw new Error('User not initialized');
+  public leaveBattle(userId: string): void {
+    DebugLogger.log(`User ${userId} leaving battle`);
+    const roomId = this.battleRooms[userId];
+    if (roomId) {
+      delete this.battleRooms[userId];
+      // Find the opponent and remove them as well
+      const opponentId = Object.keys(this.battleRooms).find(key => this.battleRooms[key] === roomId && key !== userId);
+      if (opponentId) {
+        delete this.battleRooms[opponentId];
+        delete this.userListeners[opponentId];
+      }
     }
-    
-    try {
-      const botUser = this.botMatchService.createBotUser();
-      return await this.createMatch(botUser.id);
-    } catch (error) {
-      this.debugLogger.error('Error creating bot match', error as Error);
-      throw error;
-    }
+    delete this.userListeners[userId];
+  }
+
+  public getCurrentUserId(): string {
+    const { data } = supabase.auth.getSession();
+    return data?.session?.user?.id || '';
   }
 }
+
+export default RealTimeMatchmakingService;

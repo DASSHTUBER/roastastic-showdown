@@ -1,190 +1,136 @@
-
-import { useState, useEffect, useCallback } from 'react';
-import { RealTimeMatchmakingService } from '@/services/RealTimeMatchmakingService';
+import React, { useState, useEffect } from 'react';
+import { User } from '@/services/matchmakingService';
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { X } from 'lucide-react';
+import { matchmakingService } from '@/services/matchmakingService';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { User } from '@/services/matchmaking/types';
 
-// Get singleton instance
-const matchmakingService = RealTimeMatchmakingService.getInstance();
-
-interface UserMatchmakingProps {
-  onMatchCreated: (matchId: string) => void;
+export interface UserMatchmakingProps {
+  onCancel?: () => void;
+  onMatchFound: (opponent: User) => void;
 }
 
-const UserMatchmaking = ({ onMatchCreated }: UserMatchmakingProps) => {
-  const [isJoining, setIsJoining] = useState(false);
-  const [isJoined, setIsJoined] = useState(false);
-  const [onlineUsers, setOnlineUsers] = useState<User[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [isBotMatching, setIsBotMatching] = useState(false);
-  const { user, username } = useAuth();
-
-  // Join matchmaking
-  const joinMatchmaking = useCallback(async () => {
-    if (!user || !username) {
-      setError('User not authenticated');
-      return;
-    }
-
-    setIsJoining(true);
-    setError(null);
-
-    try {
-      await matchmakingService.joinMatchmaking(user.id, username);
-      setIsJoined(true);
-      
-      // Start polling for online users
-      getOnlineUsers();
-    } catch (error) {
-      setError((error as Error).message);
-    } finally {
-      setIsJoining(false);
-    }
-  }, [user, username]);
-
-  // Leave matchmaking
-  const leaveMatchmaking = useCallback(async () => {
-    try {
-      await matchmakingService.leaveMatchmaking();
-      setIsJoined(false);
-      setOnlineUsers([]);
-    } catch (error) {
-      setError((error as Error).message);
-    }
-  }, []);
-
-  // Toggle bot matching
-  const toggleBotMatching = useCallback(() => {
-    const newState = !isBotMatching;
-    setIsBotMatching(newState);
-    matchmakingService.enableBotMatch(newState);
-  }, [isBotMatching]);
-
-  // Create a match with a bot
-  const createBotMatch = useCallback(async () => {
-    try {
-      const matchId = await matchmakingService.createBotMatch();
-      onMatchCreated(matchId);
-    } catch (error) {
-      setError((error as Error).message);
-    }
-  }, [onMatchCreated]);
-
-  // Create a match with a user
-  const createMatch = useCallback(async (opponentId: string) => {
-    try {
-      const matchId = await matchmakingService.createMatch(opponentId);
-      onMatchCreated(matchId);
-    } catch (error) {
-      setError((error as Error).message);
-    }
-  }, [onMatchCreated]);
-
-  // Get online users
-  const getOnlineUsers = useCallback(async () => {
-    if (!isJoined) return;
-    
-    try {
-      const users = await matchmakingService.getOnlineUsers();
-      // Filter out current user
-      const filteredUsers = users.filter(u => u.id !== user?.id);
-      setOnlineUsers(filteredUsers);
-    } catch (error) {
-      console.error('Error fetching online users:', error);
-    }
-  }, [isJoined, user]);
-
-  // Cleanup on unmount
+const UserMatchmaking: React.FC<UserMatchmakingProps> = ({ onCancel, onMatchFound }) => {
+  const [progress, setProgress] = useState(0);
+  const [searchTime, setSearchTime] = useState(0);
+  const [isSearching, setIsSearching] = useState(true);
+  const [matchmakingMessage, setMatchmakingMessage] = useState('Finding a sweet opponent...');
+  const { username, user } = useAuth();
+  
   useEffect(() => {
+    // Start progress animation
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        const newProgress = prev + 1;
+        if (newProgress >= 100) {
+          // Reset progress when it reaches 100%
+          return 0;
+        }
+        return newProgress;
+      });
+    }, 300);
+    
+    // Track search time
+    const searchTimeInterval = setInterval(() => {
+      setSearchTime(prev => prev + 1);
+    }, 1000);
+    
+    // Update messages based on search time
+    const messageInterval = setInterval(() => {
+      const messages = [
+        'Finding a sweet opponent...',
+        'Searching for candy crushers...',
+        'Looking for roast masters...',
+        'Matching skill levels...',
+        'Still searching...',
+        'Hang tight, almost there...',
+        'Scanning the candy kingdom...'
+      ];
+      
+      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+      setMatchmakingMessage(randomMessage);
+    }, 4000);
+    
+    // Simulate finding a match after some time (for demo purposes)
+    // In a real app, this would be replaced with actual matchmaking logic
+    const matchTimeout = setTimeout(() => {
+      const mockOpponent: User = {
+        id: 'opponent-123',
+        username: 'CandyCrusher42',
+        avatarUrl: 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Felix',
+        status: 'online',
+        rating: 1200
+      };
+      
+      onMatchFound(mockOpponent);
+      setIsSearching(false);
+    }, 8000);
+    
+    // Clean up intervals and timeouts
     return () => {
-      leaveMatchmaking();
+      clearInterval(progressInterval);
+      clearInterval(searchTimeInterval);
+      clearInterval(messageInterval);
+      clearTimeout(matchTimeout);
     };
-  }, [leaveMatchmaking]);
-
-  // Poll for online users every 5 seconds
-  useEffect(() => {
-    if (!isJoined) return;
-    
-    const interval = setInterval(getOnlineUsers, 5000);
-    return () => clearInterval(interval);
-  }, [isJoined, getOnlineUsers]);
-
+  }, [onMatchFound]);
+  
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    }
+  };
+  
   return (
-    <div className="candy-panel p-4 rounded-lg">
-      <h2 className="text-xl font-bold mb-4 text-white">Matchmaking</h2>
-      
-      {error && (
-        <div className="bg-roast-red/20 text-roast-red p-2 rounded-md mb-4">
-          {error}
+    <div className="max-w-md mx-auto">
+      <div className="candy-panel p-8 rounded-xl text-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-candy-purple/30 to-candy-blue/30 animate-pulse-slow"></div>
+        
+        <div className="relative z-10">
+          <h2 className="text-xl font-bold mb-6 text-white candy-shadow">
+            Sweet Matchmaking
+          </h2>
+          
+          <div className="mb-8">
+            <div className="w-24 h-24 mx-auto relative">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-candy-bright-pink via-candy-purple to-candy-blue animate-spin-slow"></div>
+              <div className="absolute inset-1 rounded-full bg-[#2A0E3D] flex items-center justify-center">
+                <Avatar className="w-16 h-16 border-2 border-white/20">
+                  <AvatarImage src={`https://api.dicebear.com/7.x/fun-emoji/svg?seed=${username || 'User'}`} />
+                  <AvatarFallback className="bg-candy-purple text-white">
+                    {username?.substring(0, 2).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+            </div>
+            
+            <div className="mt-4 text-white">
+              <p className="font-medium">{username || 'Anonymous User'}</p>
+              <p className="text-sm text-white/60">Ready to roast</p>
+            </div>
+          </div>
+          
+          <div className="mb-6">
+            <p className="text-white/80 mb-2">{matchmakingMessage}</p>
+            <Progress value={progress} className="h-2" />
+          </div>
+          
+          <div className="flex justify-between items-center text-sm text-white/60 mb-6">
+            <span>Search time: {searchTime}s</span>
+            <span>Players online: {Math.floor(Math.random() * 50) + 100}</span>
+          </div>
+          
+          <Button 
+            onClick={handleCancel}
+            variant="outline" 
+            className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+          >
+            <X className="mr-2 h-4 w-4" /> Cancel Search
+          </Button>
         </div>
-      )}
-      
-      {!isJoined ? (
-        <Button 
-          onClick={joinMatchmaking} 
-          disabled={isJoining} 
-          className="candy-button w-full mb-4"
-        >
-          {isJoining ? 'Joining...' : 'Join Matchmaking'}
-        </Button>
-      ) : (
-        <Button 
-          onClick={leaveMatchmaking} 
-          className="candy-accent-button w-full mb-4"
-        >
-          Leave Matchmaking
-        </Button>
-      )}
-      
-      {isJoined && (
-        <>
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-white">Bot Matching:</span>
-            <Button 
-              onClick={toggleBotMatching} 
-              variant={isBotMatching ? "default" : "outline"}
-              className={isBotMatching ? "candy-button" : ""}
-            >
-              {isBotMatching ? 'Enabled' : 'Disabled'}
-            </Button>
-          </div>
-          
-          {isBotMatching && (
-            <Button 
-              onClick={createBotMatch} 
-              className="candy-button w-full mb-4"
-            >
-              Battle Bot
-            </Button>
-          )}
-          
-          <div className="mt-4">
-            <h3 className="text-lg font-semibold mb-2 text-white">Online Users</h3>
-            {onlineUsers.length === 0 ? (
-              <p className="text-white/70">No users online</p>
-            ) : (
-              <ul className="space-y-2">
-                {onlineUsers.map(user => (
-                  <li 
-                    key={user.id} 
-                    className="flex justify-between items-center bg-white/10 p-2 rounded-md"
-                  >
-                    <span className="text-white">{user.username}</span>
-                    <Button 
-                      onClick={() => createMatch(user.id)}
-                      size="sm"
-                      className="candy-button"
-                    >
-                      Challenge
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </>
-      )}
+      </div>
     </div>
   );
 };
