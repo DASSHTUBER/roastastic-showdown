@@ -14,13 +14,16 @@ const ProtectedRoute = ({ children, requireUsername = true, allowAnonymous = tru
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('ProtectedRoute state:', { isLoading, user: !!user, username });
-    
-    // This ensures we navigate to the correct page after authentication
-    if (user && requireUsername && username) {
-      console.log('User authenticated and has username, ready to proceed');
-    }
-  }, [isLoading, user, username, requireUsername, navigate]);
+    console.log('ProtectedRoute state:', { 
+      isLoading, 
+      userId: user?.id, 
+      isAuthenticated: !!user, 
+      username,
+      isAnonymous: user?.app_metadata?.provider === 'anonymous',
+      requireUsername,
+      allowAnonymous
+    });
+  }, [isLoading, user, username, requireUsername, allowAnonymous]);
 
   if (isLoading) {
     return (
@@ -37,17 +40,22 @@ const ProtectedRoute = ({ children, requireUsername = true, allowAnonymous = tru
 
   if (!user) {
     // Store current path to redirect back after authentication
-    sessionStorage.setItem('redirectAfterAuth', window.location.pathname);
+    const currentPath = window.location.pathname;
+    console.log('User not authenticated, redirecting to /auth. Will return to:', currentPath);
+    sessionStorage.setItem('redirectAfterAuth', currentPath);
     return <Navigate to="/auth" replace />;
   }
 
-  const isAnonymous = user.app_metadata.provider === 'anonymous';
+  const isAnonymous = user.app_metadata?.provider === 'anonymous';
+  console.log('Authentication check passed. User is anonymous:', isAnonymous);
   
   // If the user is anonymous and we allow anonymous users, we don't require a username
   if (requireUsername && !username && !(allowAnonymous && isAnonymous)) {
+    console.log('Username required but not found, redirecting to username setup');
     return <Navigate to="/username-setup" replace />;
   }
 
+  console.log('All checks passed, rendering protected content');
   return <>{children}</>;
 };
 

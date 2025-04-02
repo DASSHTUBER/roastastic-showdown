@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,7 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
-        console.log('Auth state changed:', event);
+        console.log('Auth state changed:', event, currentSession?.user?.id);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
@@ -43,7 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Then check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      console.log('Initial session check:', currentSession ? 'Session found' : 'No session');
+      console.log('Initial session check:', currentSession ? `Session found for ${currentSession.user.id}` : 'No session');
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       
@@ -71,6 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      console.log('Username fetch result:', data);
       setUsernameState(data?.username || null);
     } catch (error) {
       console.error('Error in fetchUsername:', error);
@@ -105,7 +107,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Signing in with email:', email);
+      setIsLoading(true);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -115,17 +120,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error('Error signing in with email:', error);
         throw error;
       } else {
+        console.log('Sign in successful:', data.user?.id);
         toast.success('Signed in successfully');
       }
     } catch (error) {
       console.error('Unexpected error during email sign-in:', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log('Signing up with email:', email);
+      setIsLoading(true);
+      
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -137,10 +148,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         toast.error(`Failed to sign up: ${error.message}`);
         console.error('Error signing up with email:', error);
         throw error;
+      } else {
+        console.log('Sign up response:', data);
+        if (data.user) {
+          toast.success('Account created successfully!');
+        } else {
+          toast.info('Please check your email to confirm your account');
+        }
       }
     } catch (error) {
       console.error('Unexpected error during email sign-up:', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
