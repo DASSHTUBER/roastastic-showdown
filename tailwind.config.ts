@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -86,6 +85,13 @@ export default {
 					"light-blue": "#C2F0FF",
 					"light-green": "#D6FFBD",
 					"light-yellow": "#FFF6C2"
+				},
+				flame: {
+					red: "#FF3311",
+					orange: "#FF8800",
+					yellow: "#FFCC00",
+					deep: "#CC2200",
+					spark: "#FFDD44"
 				}
 			},
 			borderRadius: {
@@ -232,7 +238,9 @@ export default {
 			backgroundImage: {
 				'candy-gradient': 'linear-gradient(135deg, #FF8ABC 0%, #A066D3 100%)',
 				'candy-button': 'linear-gradient(to right, #FF4090, #A066D3)',
-				'candy-background': 'radial-gradient(circle, #FFD1E3 0%, #E8D6FF 100%)'
+				'candy-background': 'radial-gradient(circle, #FFD1E3 0%, #E8D6FF 100%)',
+				'flame-pattern': "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 30c5-8 2-20-8-20S2 17 12 30c-5 8-2 20 8 20s20-13 10-20' stroke='%23FF3A2F' stroke-width='1.5' fill='none' fill-rule='evenodd' stroke-opacity='0.2'/%3E%3C/svg%3E\")",
+				'ember-gradient': "radial-gradient(circle at top right, rgba(255, 149, 0, 0.4) 0%, transparent 70%), radial-gradient(circle at bottom left, rgba(255, 58, 47, 0.5) 0%, transparent 70%)"
 			}
 		}
 	},

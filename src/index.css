@@ -59,9 +59,12 @@
   }
 
   body {
-    @apply bg-roast-dark-gray text-foreground antialiased overflow-x-hidden;
+    @apply bg-gradient-to-br from-roast-dark/90 to-roast-dark-gray/95 text-foreground antialiased overflow-x-hidden;
     font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
-    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ff3a2f' fill-opacity='0.1'%3E%3Cpath d='M50 100c27.6 0 50-22.4 50-50S77.6 0 50 0 0 22.4 0 50s22.4 50 50 50zm0-10c22.1 0 40-17.9 40-40S72.1 10 50 10 10 27.9 10 50s17.9 40 40 40z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ff3a2f' fill-opacity='0.3'%3E%3Cpath d='M50 100c27.6 0 50-22.4 50-50S77.6 0 50 0 0 22.4 0 50s22.4 50 50 50zm0-10c22.1 0 40-17.9 40-40S72.1 10 50 10 10 27.9 10 50s17.9 40 40 40z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"), 
+      radial-gradient(circle at top right, rgba(255, 149, 0, 0.4) 0%, transparent 70%),
+      radial-gradient(circle at bottom left, rgba(255, 58, 47, 0.5) 0%, transparent 70%);
+    background-blend-mode: overlay;
   }
 
   html {
@@ -238,11 +241,11 @@
   }
   
   .ember-glow {
-    box-shadow: 0 0 10px rgba(255, 149, 0, 0.7), 0 0 20px rgba(255, 58, 47, 0.4);
+    box-shadow: 0 0 15px rgba(255, 149, 0, 0.8), 0 0 30px rgba(255, 58, 47, 0.6);
   }
   
   .fire-button {
-    @apply relative overflow-hidden bg-gradient-to-r from-roast-red to-roast-orange text-white font-bold rounded-md shadow-[0_0_10px_rgba(255,58,47,0.4)] hover:shadow-[0_0_15px_rgba(255,58,47,0.6)] transition-all;
+    @apply relative overflow-hidden bg-gradient-to-r from-roast-red to-roast-orange text-white font-bold rounded-md shadow-[0_0_15px_rgba(255,58,47,0.5)] hover:shadow-[0_0_20px_rgba(255,58,47,0.8)] transition-all;
   }
   
   .fire-button::before {
@@ -252,6 +255,38 @@
   
   .fire-button:hover::before {
     @apply opacity-100;
+  }
+  
+  .fire-pulse {
+    animation: fire-pulse 3s infinite;
+  }
+  
+  .flame-background {
+    @apply relative overflow-hidden;
+  }
+  
+  .flame-background::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-t from-roast-red/20 via-roast-orange/15 to-roast-yellow/10 opacity-80 z-0;
+  }
+  
+  .flame-pattern {
+    background-image: 
+      radial-gradient(circle at top right, rgba(255, 149, 0, 0.4) 0%, transparent 70%),
+      radial-gradient(circle at bottom left, rgba(255, 58, 47, 0.5) 0%, transparent 70%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 30c5-8 2-20-8-20S2 17 12 30c-5 8-2 20 8 20s20-13 10-20' stroke='%23FF3A2F' stroke-width='1.5' fill='none' fill-rule='evenodd' stroke-opacity='0.2'/%3E%3C/svg%3E");
+  }
+  
+  @keyframes fire-pulse {
+    0% {
+      filter: brightness(1);
+    }
+    50% {
+      filter: brightness(1.2);
+    }
+    100% {
+      filter: brightness(1);
+    }
   }
   
   /* New Gartic-themed Elements */
