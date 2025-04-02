@@ -18,6 +18,7 @@ const UserMatchmaking: React.FC<UserMatchmakingProps> = ({ onCancel, onMatchFoun
   const [searchTime, setSearchTime] = useState(0);
   const [isSearching, setIsSearching] = useState(true);
   const [matchmakingMessage, setMatchmakingMessage] = useState('Finding a sweet opponent...');
+  const [onlineUsers, setOnlineUsers] = useState(0);
   const { username, user } = useAuth();
   
   useEffect(() => {
@@ -25,9 +26,14 @@ const UserMatchmaking: React.FC<UserMatchmakingProps> = ({ onCancel, onMatchFoun
     const startMatchmaking = async () => {
       if (user?.id) {
         const userDisplayName = username || `User_${user.id.substring(0, 4)}`;
+        
+        // Generate a consistent avatar URL
+        const avatarUrl = `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${userDisplayName}`;
+        
         // Register callback for match notifications
         matchmakingService.onMatchFound(user.id, (opponent) => {
           if (opponent) {
+            console.log("Match found with opponent:", opponent);
             onMatchFound(opponent);
             setIsSearching(false);
           }
@@ -37,7 +43,7 @@ const UserMatchmaking: React.FC<UserMatchmakingProps> = ({ onCancel, onMatchFoun
         await matchmakingService.enterMatchmaking(
           user.id, 
           userDisplayName, 
-          `https://api.dicebear.com/7.x/fun-emoji/svg?seed=${userDisplayName}`
+          avatarUrl
         );
       }
     };
@@ -73,8 +79,17 @@ const UserMatchmaking: React.FC<UserMatchmakingProps> = ({ onCancel, onMatchFoun
         'Scanning the candy kingdom...'
       ];
       
-      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-      setMatchmakingMessage(randomMessage);
+      // Sometimes show encouraging messages for longer waits
+      if (searchTime > 10 && Math.random() > 0.7) {
+        setMatchmakingMessage('Not many players online right now. Hang tight!');
+      } else {
+        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+        setMatchmakingMessage(randomMessage);
+      }
+      
+      // Update simulated online users count (more realistic)
+      setOnlineUsers(Math.floor(Math.random() * 30) + 5 + Math.floor(searchTime / 3));
+      
     }, 4000);
     
     // Clean up intervals and timeouts
@@ -88,7 +103,7 @@ const UserMatchmaking: React.FC<UserMatchmakingProps> = ({ onCancel, onMatchFoun
         matchmakingService.cancelMatchmaking(user.id);
       }
     };
-  }, [onMatchFound, user, username]);
+  }, [onMatchFound, user, username, searchTime]);
   
   const handleCancel = () => {
     if (user?.id) {
@@ -135,7 +150,7 @@ const UserMatchmaking: React.FC<UserMatchmakingProps> = ({ onCancel, onMatchFoun
           
           <div className="flex justify-between items-center text-sm text-white/60 mb-6">
             <span>Search time: {searchTime}s</span>
-            <span>Players online: {Math.floor(Math.random() * 50) + 100}</span>
+            <span>Players online: {onlineUsers}</span>
           </div>
           
           <Button 
